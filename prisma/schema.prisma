@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  user User?
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  inviteCodeId String   @unique
+  nickname     String
+  createdAt    DateTime @default(now())
+  lastLoginAt  DateTime @default(now())
+
+  inviteCode InviteCode @relation(fields: [inviteCodeId], references: [id])
+  player     Player?
+}
+
+model Player {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  name            String
+  level           Int      @default(1)
+  exp             Int      @default(0)
+  gold            Int      @default(0)
+  power           Int      @default(0)
+  currentRegionId String   @default("region_001")
+  lastClaimAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  user      User            @relation(fields: [userId], references: [id])
+  logs      GameLog[]
+  materials MaterialStack[]
+  items     ItemInstance[]
+  unlockedRegions PlayerUnlockedRegion[]
+  bossProgresses  PlayerBossProgress[]
+  worldBossLogs   WorldBossAttackLog[]
+  blessingsSent     Blessing[] @relation("BlessingSender")
+  blessingsReceived Blessing[] @relation("BlessingTarget")
+}
+
+model GameLog {
+  id        String   @id @default(cuid())
+  playerId  String?
+  type      String
+  message   String
+  payload   String?
+  createdAt DateTime @default(now())
+
+  player Player? @relation(fields: [playerId], references: [id])
+}
+
+model MaterialStack {
+  playerId   String
+  materialId String
+  amount     Int    @default(0)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, materialId])
+}
+
+model ItemInstance {
+  id           String    @id @default(cuid())
+  playerId     String
+  baseItemId   String
+  sourceRegionId String
+  name         String
+  slot         String
+  rarity       String
+  enhancementLevel Int   @default(0)
+  attack       Int       @default(0)
+  defense      Int       @default(0)
+  hp           Int       @default(0)
+  luck         Int       @default(0)
+  crit         Int       @default(0)
+  goldBonus    Int       @default(0)
+  expBonus     Int       @default(0)
+  dropBonus    Int       @default(0)
+  affixIds     String    @default("[]")
+  equippedAt   DateTime?
+  equipSlotIndex Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, slot])
+  @@index([playerId, equippedAt])
+  @@index([playerId, slot, equipSlotIndex])
+}
+
+model PlayerUnlockedRegion {
+  playerId   String
+  regionId   String
+  unlockedAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, regionId])
+  @@index([playerId, unlockedAt])
+}
+
+model PlayerBossProgress {
+  playerId        String
+  bossId          String
+  challengeDay    String?
+  challengesUsed  Int      @default(0)
+  clearCount      Int      @default(0)
+  firstClearedAt  DateTime?
+  updatedAt       DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, bossId])
+  @@index([playerId, updatedAt])
+}
+
+model WorldBossState {
+  id            String   @id @default(cuid())
+  cycleDay      String   @unique
+  bossId        String
+  currentHp     Int
+  maxHp         Int
+  status        String   @default("ACTIVE")
+  defeatedAt    DateTime?
+  lastHitPlayerId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  attackLogs WorldBossAttackLog[]
+
+  @@index([status, cycleDay])
+}
+
+model WorldBossAttackLog {
+  id               String   @id @default(cuid())
+  worldBossStateId String
+  playerId         String
+  cycleDay         String
+  eventType        String
+  damage           Int      @default(0)
+  isFinalBlow      Boolean  @default(false)
+  rewardClaimedAt  DateTime?
+  createdAt        DateTime @default(now())
+
+  worldBossState WorldBossState @relation(fields: [worldBossStateId], references: [id], onDelete: Cascade)
+  player         Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([worldBossStateId, createdAt])
+  @@index([playerId, cycleDay, eventType])
+}
+
+model Blessing {
+  id             String   @id @default(cuid())
+  playerId       String
+  targetPlayerId String
+  dayKey         String
+  goldGranted    Int
+  expGranted     Int
+  createdAt      DateTime @default(now())
+
+  player Player @relation("BlessingSender", fields: [playerId], references: [id], onDelete: Cascade)
+  target Player @relation("BlessingTarget", fields: [targetPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, dayKey])
+  @@index([targetPlayerId, dayKey])
+}
