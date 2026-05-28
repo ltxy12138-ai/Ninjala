@@ -16,7 +16,10 @@
     "db:migrate": "cd prisma && prisma migrate dev --schema schema.prisma",
     "db:clear-accounts": "tsx prisma/clear-accounts.ts",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "cd prisma && prisma studio --schema schema.prisma"
+    "db:studio": "cd prisma && prisma studio --schema schema.prisma",
+    "postinstall": "prisma generate --schema prisma/schema.production.prisma",
+    "db:migrate:prod": "prisma migrate deploy --schema prisma/schema.production.prisma",
+    "db:seed:prod": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
