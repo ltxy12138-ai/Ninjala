@@ -72,6 +72,7 @@ Expected work:
 
 - update `prisma/schema.prisma`
 - create a fresh migration baseline for the target environment if needed
+- remove or rewrite any SQLite-specific raw SQL such as `julianday(...)` before shipping to Neon/Postgres
 - verify all indexes and text fields still behave as expected
 - verify transaction-heavy flows:
   - idle claim

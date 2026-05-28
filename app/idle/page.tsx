@@ -18,6 +18,7 @@ import {
 } from "@/lib/game/idle";
 import { normalizeUnlockedRegionIds } from "@/lib/game/progression";
 import { listRegionsForPlayer } from "@/lib/game/regions";
+import { getCurrentTimeMs } from "@/lib/time";
 import { formatRarityLabel, type ItemRarity } from "@/lib/game/types";
 import { formatUiDateTime, getLocale } from "@/lib/i18n";
 import { requireCurrentPlayer } from "@/lib/player";
@@ -141,7 +142,7 @@ export default async function IdlePage({ searchParams }: IdlePageProps) {
   ]);
 
   const db = getDb();
-  const [materialStacks, unlockedRows, serverClockRows] = await Promise.all([
+  const [materialStacks, unlockedRows] = await Promise.all([
     db.materialStack.findMany({
       where: { playerId: player.id },
       orderBy: [{ amount: "desc" }, { materialId: "asc" }],
@@ -150,9 +151,6 @@ export default async function IdlePage({ searchParams }: IdlePageProps) {
       where: { playerId: player.id },
       select: { regionId: true },
     }),
-    db.$queryRaw<Array<{ nowMs: number }>>`
-      SELECT CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) AS nowMs
-    `,
   ]);
 
   const unlockedRegionIds = normalizeUnlockedRegionIds(
@@ -169,7 +167,7 @@ export default async function IdlePage({ searchParams }: IdlePageProps) {
   const regionViewId = readSearchParam(params, "regionView");
   const selectedRegion =
     regions.find((region) => region.id === regionViewId) ?? activeRegion;
-  const serverNowMs = Number(serverClockRows[0]?.nowMs ?? player.lastClaimAt.getTime());
+  const serverNowMs = getCurrentTimeMs();
   const preview = calculateIdleRewards(
     activeRegion,
     serverNowMs - player.lastClaimAt.getTime(),
