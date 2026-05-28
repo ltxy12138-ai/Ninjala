@@ -17,8 +17,8 @@ Define a small, maintainable technical foundation for a mobile-first idle RPG bu
 
 - Next.js Route Handlers and Server Actions
 - Prisma ORM
-- SQLite for local development
-- Future migration path: Turso or Postgres for deployment durability
+- PostgreSQL
+- Prisma migrations shared by local and production environments
 
 ### Tooling
 
@@ -277,8 +277,8 @@ Expected initial environment keys:
 
 ## Deployment Notes
 
-- SQLite is acceptable for local development only
-- Production deployment should use a persistent hosted database before real friend usage
+- PostgreSQL is the default database for both local and production environments
+- Production deployment should use a persistent hosted database or a self-hosted PostgreSQL instance before real friend usage
 - `npm run build` must pass before deployment
 - Prisma migration strategy must be documented in README
 

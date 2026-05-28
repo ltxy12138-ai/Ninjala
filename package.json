@@ -13,14 +13,14 @@
     "sim:drops": "tsx scripts/simulate-drops.ts",
     "sim:players": "tsx scripts/simulate-players.ts",
     "sim:economy": "tsx scripts/simulate-economy.ts",
-    "db:migrate": "cd prisma && prisma migrate dev --schema schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "db:clear-accounts": "tsx prisma/clear-accounts.ts",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "cd prisma && prisma studio --schema schema.prisma",
-    "db:migrate:prod": "prisma migrate deploy --schema prisma/schema.production.prisma",
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "db:migrate:prod": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed:prod": "tsx prisma/seed.ts",
     "predev": "prisma generate --schema prisma/schema.prisma",
-    "postinstall": "prisma generate --schema prisma/schema.production.prisma"
+    "postinstall": "prisma generate --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

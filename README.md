@@ -8,7 +8,7 @@ A mobile-first idle loot RPG for a private group of 5 players.
 - TypeScript
 - Tailwind CSS
 - Prisma
-- SQLite
+- PostgreSQL
 - Vitest
 
 ## Local Setup
@@ -31,19 +31,28 @@ PowerShell:
 Copy-Item .env.example .env
 ```
 
-3. Run the database migration:
+3. Prepare a local PostgreSQL database first.
+
+Recommended defaults for this repo:
+
+- database user: `root`
+- database name: `Ninjala`
+
+Then update `.env` so `DATABASE_URL` points to that database.
+
+4. Run the database migration:
 
 ```bash
 npm run db:migrate
 ```
 
-4. Seed the invite codes:
+5. Seed the invite codes:
 
 ```bash
 npm run db:seed
 ```
 
-5. Start the dev server:
+6. Start the dev server:
 
 ```bash
 npm run dev
@@ -134,5 +143,8 @@ Recommended entry point:
 
 - `docs/README_INDEX.md`
 - `docs/CLOSED_TEST_PLAN.md` for Phase 8 commands and findings
-- `docs/DEPLOYMENT_RUNBOOK.md` for the online-launch plan
+- `docs/DEPLOYMENT_RUNBOOK.md` for the Chinese final deployment runbook
+- `docs/HERMES_ONE_SHOT_DEPLOY.md` for the Hermes one-shot deployment prompt
 - `docs/LAUNCH_CHECKLIST.md` for pre-invite go/no-go checks
+
+If you plan to self-host on a lightweight server, `docs/DEPLOYMENT_RUNBOOK.md` now includes a Chinese copy-paste deployment flow for `Ubuntu 24.04 + www.ninjala.online + local Postgres + PM2 + Nginx`.

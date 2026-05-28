@@ -29,7 +29,7 @@ This document defines what "done" means at each phase so implementation can stay
 
 - Next.js App Router project
 - Tailwind setup
-- Prisma schema and local SQLite setup
+- Prisma schema and local PostgreSQL setup
 - Invite-code login flow
 - Player creation or reuse
 - Mobile shell and bottom navigation

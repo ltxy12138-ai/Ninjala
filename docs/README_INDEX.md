@@ -96,12 +96,13 @@
 
 用途：
 
-- 记录真正把项目部署到公网前需要做的技术改造和推荐路线
+- 记录真正把项目部署到公网前需要做的技术改造、部署路线和最终执行命令
 
 特点：
 
 - 回答“怎么让朋友真的连上来玩”
 - 重点覆盖数据库、环境变量、邀请码初始化和 `/admin` 安全边界
+- 已包含中文最终版部署手册，适用于 `Ubuntu 24.04 + www.ninjala.online + 本机 Postgres + PM2 + Nginx`
 
 ### [LAUNCH_CHECKLIST.md](C:/Users/Xinya.li/Documents/DeltaProject/docs/LAUNCH_CHECKLIST.md)
 
@@ -113,6 +114,17 @@
 
 - 回答“现在能不能真的发给朋友玩”
 - 适合作为 go / no-go 核对表
+
+### [HERMES_ONE_SHOT_DEPLOY.md](C:/Users/Xinya.li/Documents/DeltaProject/docs/HERMES_ONE_SHOT_DEPLOY.md)
+
+用途：
+
+- 给已经装好 Hermes 的 Ubuntu 服务器提供一份可直接执行的一站式上线提示词
+
+特点：
+
+- 回答“怎么把文档直接喂给 Hermes，让它帮我上线”
+- 包含固定参数、占位符、标准提示词和自检要求
 
 ## 文档优先级
 
@@ -229,10 +241,13 @@
 - 装备系统已经切到双饰品位，`goldBonus / expBonus / dropBonus / crit / luck` 也都接入了真实结算或战斗逻辑
 - 背包和角色页现在会显示装备机制说明卡，解释基础装备、词缀、来源区域和词条来源
 - 公网部署方案与上线前检查清单已经补到 `docs/DEPLOYMENT_RUNBOOK.md` 和 `docs/LAUNCH_CHECKLIST.md`
+- `DEPLOYMENT_RUNBOOK.md` 里现在也包含了“轻量服务器自托管版”的中文最终命令版，适合用 Node + Nginx + Postgres 自己跑
+- `HERMES_ONE_SHOT_DEPLOY.md` 也已经补上，适合让 Hermes 在服务器本机直接一站式执行部署
 
 下一步更适合优先查看：
 
 - `ACCEPTANCE.md` 中第 8 阶段封测硬化要求
 - `TECH_SPEC.md` 中模拟脚本、事务边界和环境变量约束
 - `README.md` 中最新的当前状态与本地启动说明
-- `DEPLOYMENT_RUNBOOK.md` 中的联网部署改造项
+- `DEPLOYMENT_RUNBOOK.md` 中的联网部署改造项和 Ubuntu 最终执行命令
+- `HERMES_ONE_SHOT_DEPLOY.md` 中给 Hermes 的标准执行提示词
