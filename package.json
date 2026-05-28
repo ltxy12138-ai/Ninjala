@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate --schema prisma/schema.production.prisma && next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
@@ -17,7 +17,6 @@
     "db:clear-accounts": "tsx prisma/clear-accounts.ts",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "cd prisma && prisma studio --schema schema.prisma",
-    "postinstall": "prisma generate --schema prisma/schema.production.prisma",
     "db:migrate:prod": "prisma migrate deploy --schema prisma/schema.production.prisma",
     "db:seed:prod": "tsx prisma/seed.ts"
   },
@@ -25,7 +24,8 @@
     "@prisma/client": "^6.16.2",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "prisma": "^6.16.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -34,7 +34,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "prisma": "^6.16.2",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5",
