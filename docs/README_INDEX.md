@@ -115,6 +115,17 @@
 - 回答“现在能不能真的发给朋友玩”
 - 适合作为 go / no-go 核对表
 
+### [V1_WRAP_UP.md](C:/Users/Xinya.li/Documents/DeltaProject/docs/V1_WRAP_UP.md)
+
+用途：
+
+- 提供项目一阶段正式完结状态说明
+
+特点：
+
+- 回答“V1 现在到底算不算完成”
+- 统一说明已完成范围、验证状态、当前结论和非阻塞尾项
+
 ### [HERMES_ONE_SHOT_DEPLOY.md](C:/Users/Xinya.li/Documents/DeltaProject/docs/HERMES_ONE_SHOT_DEPLOY.md)
 
 用途：
@@ -243,11 +254,13 @@
 - 公网部署方案与上线前检查清单已经补到 `docs/DEPLOYMENT_RUNBOOK.md` 和 `docs/LAUNCH_CHECKLIST.md`
 - `DEPLOYMENT_RUNBOOK.md` 里现在也包含了“轻量服务器自托管版”的中文最终命令版，适合用 Node + Nginx + Postgres 自己跑
 - `HERMES_ONE_SHOT_DEPLOY.md` 也已经补上，适合让 Hermes 在服务器本机直接一站式执行部署
+- 如果要判断项目是否已经完成 V1，优先看 `docs/V1_WRAP_UP.md`
 
 下一步更适合优先查看：
 
 - `ACCEPTANCE.md` 中第 8 阶段封测硬化要求
 - `TECH_SPEC.md` 中模拟脚本、事务边界和环境变量约束
 - `README.md` 中最新的当前状态与本地启动说明
+- `V1_WRAP_UP.md` 中的一阶段完结状态说明
 - `DEPLOYMENT_RUNBOOK.md` 中的联网部署改造项和 Ubuntu 最终执行命令
 - `HERMES_ONE_SHOT_DEPLOY.md` 中给 Hermes 的标准执行提示词

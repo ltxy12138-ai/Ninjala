@@ -142,9 +142,12 @@ Project docs live in `docs/`.
 Recommended entry point:
 
 - `docs/README_INDEX.md`
+- `docs/V1_WRAP_UP.md` for the formal V1 completion summary
 - `docs/CLOSED_TEST_PLAN.md` for Phase 8 commands and findings
 - `docs/DEPLOYMENT_RUNBOOK.md` for the Chinese final deployment runbook
 - `docs/HERMES_ONE_SHOT_DEPLOY.md` for the Hermes one-shot deployment prompt
 - `docs/LAUNCH_CHECKLIST.md` for pre-invite go/no-go checks
 
 If you plan to self-host on a lightweight server, `docs/DEPLOYMENT_RUNBOOK.md` now includes a Chinese copy-paste deployment flow for `Ubuntu 24.04 + www.ninjala.online + local Postgres + PM2 + Nginx`.
+
+V1 主线已完成，正式收口说明见 `docs/V1_WRAP_UP.md`。
