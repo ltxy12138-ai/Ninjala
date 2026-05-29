@@ -1,5 +1,6 @@
 import {
   affixDefinitions,
+  getAffixDescription,
   affixMap,
   getAffixName,
   type AffixDefinition,
@@ -10,6 +11,7 @@ import {
   type DropTableDefinition,
 } from "@/data/drop-tables";
 import {
+  getItemBaseDescription,
   getItemBaseName,
   itemBaseDefinitions,
   itemBaseMap,
@@ -60,7 +62,12 @@ export type WeightedEntry<TValue extends string> = {
 
 export type EquipmentMechanicsSummary = {
   baseItemName: string;
+  baseItemDescription: string;
   affixNames: string[];
+  affixSummaries: Array<{
+    name: string;
+    description: string;
+  }>;
   sourceRegionName: string;
   rarityLabel: string;
   affixCount: number;
@@ -248,7 +255,12 @@ export function getEquipmentMechanicsSummary(
 
   return {
     baseItemName: getItemBaseName(input.baseItemId, locale),
+    baseItemDescription: getItemBaseDescription(input.baseItemId, locale),
     affixNames: affixes.map((affix) => getAffixName(affix.id, locale)),
+    affixSummaries: affixes.map((affix) => ({
+      name: getAffixName(affix.id, locale),
+      description: getAffixDescription(affix.id, locale),
+    })),
     sourceRegionName: region ? getRegionName(region, locale) : input.sourceRegionId,
     rarityLabel: formatRarityLabel(input.rarity, locale),
     affixCount: affixes.length,

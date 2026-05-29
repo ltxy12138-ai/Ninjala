@@ -188,7 +188,7 @@ This document defines what "done" means at each phase so implementation can stay
 - Real rewards are granted before AI is called
 - AI can only describe true reward payloads
 - Invalid or missing AI output falls back safely
-- Missing `OPENAI_API_KEY` does not break gameplay
+- Missing `DEEPSEEK_API_KEY` does not break gameplay
 - Failed AI generation does not roll back granted rewards
 
 ### Required Tests

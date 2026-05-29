@@ -59,8 +59,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         {adminStatus === "accounts_cleared" ? (
           <p className="mt-4 rounded-2xl bg-[#eef7ee] px-4 py-3 text-sm leading-6 text-[#355645]">
             {locale === "zh"
-              ? "测试管理台已经清空所有账号与进度，你现在可以重新注册。"
-              : "The test admin console cleared all accounts and progress. You can register again now."}
+              ? "营地名册已经清空，你现在可以重新注册。"
+              : "The roster has been cleared. You can register again now."}
           </p>
         ) : null}
 

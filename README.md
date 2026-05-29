@@ -96,13 +96,14 @@ The playable V1 core loop is already in place:
 - main boss fights now use a lightweight battle-replay modal with status panels and staged combat text
 - enhancement, dismantling, material crafting, targeted forging, and affix reforging
 - goldBonus, expBonus, dropBonus, crit, and luck now all feed real reward or combat outcomes instead of being display-only
-- gear detail cards now explain base item, affixes, source region, and which stat lines come from base stats vs affixes
-- optional AI idle flavor logs with safe fallback when `OPENAI_API_KEY` is missing or fails
+- gear detail cards now explain the base item, affixes, source region, stat origins, and short item notes instead of showing raw labels alone
+- optional AI idle flavor logs with safe fallback when `DEEPSEEK_API_KEY` is missing or fails
 - shared world boss flow and once-per-day friend blessings
 - Chinese-first UI with a global `ZH / EN` toggle
 - tabbed mobile UX for boss and inventory flows, with a paged grid backpack instead of one long gear list
 - logs, rankings, and character gear now also use compact tabbed layouts and pagination to avoid long mobile scrolling
 - home and idle now use the same compact tabbed layout language as the rest of the core flow
+- player-facing page copy has been cleaned up to read like in-world guidance rather than development progress notes
 - same-page tab, pagination, action refreshes, and modal close actions now preserve scroll position without the old top-jump or scroll jitter
 - a test-only `/admin` console now handles player resets, resource grants, full progress resets, and account cleanup, but only for the account registered from `PENGUIN-LI`
 
@@ -132,9 +133,9 @@ Current hardening priorities:
 
 The game does not require AI to function.
 
-- Leave `OPENAI_API_KEY` empty to keep deterministic fallback idle logs
-- Set `OPENAI_API_KEY` to enable best-effort AI flavor text for idle claim logs
-- `OPENAI_IDLE_LOG_MODEL` can override the default model used for idle flavor generation
+- Leave `DEEPSEEK_API_KEY` empty to keep deterministic fallback idle logs
+- Set `DEEPSEEK_API_KEY` to enable best-effort AI flavor text for idle claim logs
+- `DEEPSEEK_IDLE_LOG_MODEL` can override the default model used for idle flavor generation
 
 ## Documentation
 

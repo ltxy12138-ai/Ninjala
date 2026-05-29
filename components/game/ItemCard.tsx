@@ -22,7 +22,12 @@ type ItemCardProps = {
   compact?: boolean;
   mechanics?: {
     baseItemName: string;
+    baseItemDescription: string;
     affixNames: string[];
+    affixSummaries: Array<{
+      name: string;
+      description: string;
+    }>;
     sourceRegionName: string;
     affixCount: number;
     expectedAffixCount: number;
@@ -149,17 +154,37 @@ export function ItemCard({
             </div>
 
             <div className="mt-3 space-y-2">
+              <div className="rounded-2xl bg-white px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6c8a72]">
+                  {locale === "zh" ? "装备简介" : "Equipment Notes"}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-[#355645]">
+                  {mechanics.baseItemDescription}
+                </p>
+              </div>
+
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6c8a72]">
                   {locale === "zh" ? "词缀明细" : "Affixes"}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-[#355645]">
-                  {mechanics.affixNames.length > 0
-                    ? mechanics.affixNames.join(locale === "zh" ? "、" : ", ")
-                    : locale === "zh"
-                      ? "普通品质，无额外词缀。"
-                      : "Common quality with no extra affixes."}
-                </p>
+                {mechanics.affixSummaries.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {mechanics.affixSummaries.map((affix) => (
+                      <div key={affix.name} className="rounded-2xl bg-white px-3 py-3">
+                        <p className="text-sm font-semibold text-[#355645]">{affix.name}</p>
+                        <p className="mt-1 text-sm leading-6 text-[#55715f]">
+                          {affix.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm leading-6 text-[#355645]">
+                    {locale === "zh"
+                      ? "普通品质，只保留这件装备自己的基础路数。"
+                      : "Common quality, so this piece only carries its own base identity."}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-2 text-xs text-[#55715f] sm:grid-cols-2">

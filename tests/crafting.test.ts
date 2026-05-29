@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getBulkDismantlePreview,
   canAffordRecipe,
   getDismantlePreview,
   getForgePreview,
@@ -29,6 +30,33 @@ describe("crafting and dismantling", () => {
     expect(commonPreview.materialId).toBe("bamboo_shoot");
     expect(epicPreview.materialId).toBe("iron_ore");
     expect(epicPreview.amount).toBeGreaterThan(commonPreview.amount);
+  });
+
+  it("aggregates one-click dismantle rewards across multiple items", () => {
+    const preview = getBulkDismantlePreview([
+      {
+        id: "item-1",
+        name: "Common Spear",
+        sourceRegionId: "region_001",
+        rarity: "common",
+        enhancementLevel: 0,
+      },
+      {
+        id: "item-2",
+        name: "Rare Spear",
+        sourceRegionId: "region_001",
+        rarity: "rare",
+        enhancementLevel: 1,
+      },
+    ]);
+
+    expect(preview.itemCount).toBe(2);
+    expect(preview.materials).toEqual([
+      {
+        materialId: "bamboo_shoot",
+        amount: 7,
+      },
+    ]);
   });
 
   it("allows crafting only when every ingredient threshold is met", () => {

@@ -29,6 +29,11 @@ export type DismantlePreview = {
   amount: number;
 };
 
+export type BulkDismantlePreview = {
+  itemCount: number;
+  materials: MaterialIngredient[];
+};
+
 export type ForgePreview = {
   slot: ItemSlot;
   regionId: string;
@@ -173,6 +178,23 @@ export function getDismantlePreview(item: DismantleItemSnapshot): DismantlePrevi
   };
 }
 
+export function getBulkDismantlePreview(items: DismantleItemSnapshot[]) {
+  const totals = new Map<string, number>();
+
+  for (const item of items) {
+    const preview = getDismantlePreview(item);
+    totals.set(preview.materialId, (totals.get(preview.materialId) ?? 0) + preview.amount);
+  }
+
+  return {
+    itemCount: items.length,
+    materials: Array.from(totals.entries()).map(([materialId, amount]) => ({
+      materialId,
+      amount,
+    })),
+  } satisfies BulkDismantlePreview;
+}
+
 export function canAffordRecipe(
   recipe: MaterialRecipeDefinition,
   materialAmounts: Map<string, number>,
@@ -304,6 +326,19 @@ export function buildDismantleLogMessage(
   return locale === "zh"
     ? `分解了 ${item.name}，回收 ${materialName} x${preview.amount}。`
     : `Dismantled ${item.name} and recovered ${materialName} x${preview.amount}.`;
+}
+
+export function buildBulkDismantleLogMessage(
+  preview: BulkDismantlePreview,
+  locale: Locale,
+) {
+  const materialSummary = preview.materials
+    .map((material) => `${getMaterialName(material.materialId, locale)} x${material.amount}`)
+    .join(locale === "zh" ? "、" : ", ");
+
+  return locale === "zh"
+    ? `分解了 ${preview.itemCount} 件装备，回收 ${materialSummary}。`
+    : `Dismantled ${preview.itemCount} items and recovered ${materialSummary}.`;
 }
 
 export function buildForgeLogMessage(

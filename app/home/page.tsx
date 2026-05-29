@@ -3,7 +3,6 @@ import Link from "next/link";
 import { PlayerSummary } from "@/components/game/PlayerSummary";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { getRegionName } from "@/data/regions";
-import { canAccessAdminTools } from "@/lib/admin";
 import { getRegionById } from "@/lib/game/regions";
 import { getLocale } from "@/lib/i18n";
 import { requireCurrentPlayer } from "@/lib/player";
@@ -49,15 +48,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   ]);
   const currentRegion = getRegionById(player.currentRegionId);
   const selectedTab = normalizeHomeTab(readSearchParam(params, "tab"));
-  const adminToolsEnabled = canAccessAdminTools(user.inviteCode?.code);
 
   return (
     <MobileShell
       title={locale === "zh" ? "村口营地" : "Village Camp"}
       subtitle={
         locale === "zh"
-          ? "首页也统一成短分区布局，先看总览，再决定去哪里。"
-          : "Home now matches the compact tabbed layout used across the rest of the app."
+          ? "先看今天的收益和路向，再决定下一步去哪。"
+          : "Check your current momentum here before choosing the next stop."
       }
     >
       <PlayerSummary
@@ -111,22 +109,22 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
             <div className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-4 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
               <p className="text-xs uppercase tracking-[0.14em] text-[#6c8a72]">
-                {locale === "zh" ? "当前重点" : "Current Focus"}
+                {locale === "zh" ? "当前目标" : "Current Goal"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[#183a2a]">
-                {locale === "zh" ? "主线扩展" : "Route Expansion"}
+                {locale === "zh" ? "推进主线" : "Push Progress"}
               </p>
             </div>
           </section>
 
           <section className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-5 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
             <h2 className="text-lg font-semibold text-[#183a2a]">
-              {locale === "zh" ? "当前进度" : "Current Status"}
+              {locale === "zh" ? "营地提示" : "Camp Notes"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#55715f]">
               {locale === "zh"
-                ? "账号密码登录、一次性邀请码注册、存档、挂机、掉落、分页背包、双饰品位、角色装备页、Boss、区域解锁，以及强化、分解、锻造、重铸、世界 Boss、好友祝福都已经接通；等级也改成了基于总经验的非线性公式成长，理论上限 3000 级。goldBonus、expBonus、dropBonus、crit 和 luck 现在都是真实生效属性，装备详情也会解释基础装备、词缀和来源区域。主线区域现在已经扩展到 10 区，后半段推进更强调练度门槛，主线 Boss 也改成了带状态栏和文字回放的轻战斗弹窗。"
-                : "Account-password login, one-time invite registration, saves, idle rewards, drops, a paged inventory, dual accessory slots, character gear views, bosses, region unlocks, enhancement, dismantling, forging, reforging, world boss, and blessings are all connected; leveling now follows a nonlinear total-exp curve with a theoretical cap of 3000. goldBonus, expBonus, dropBonus, crit, and luck now affect real rewards or combat outcomes, and gear details explain base items, affixes, and source regions. The main route now spans 10 regions, later progression leans harder on power gates, and main bosses now use a lightweight battle replay modal with status panels and staged combat text."}
+                ? "主线越往后越吃练度，先稳住挂机收益，再根据掉落方向调整装备和词缀，回头挑战守门 Boss 会更轻松。"
+                : "Later regions demand stronger builds, so it is better to stabilize idle rewards first, tune gear and affixes around your drops, and then return for the gatekeeper boss."}
             </p>
           </section>
 
@@ -202,21 +200,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </p>
             </Link>
           ))}
-          {adminToolsEnabled ? (
-            <Link
-              href="/admin"
-              className="rounded-[24px] border border-[#d7ddd7] bg-[#f9fbf8] p-4 shadow-[0_16px_40px_rgba(24,58,42,0.05)] transition hover:bg-[#f2f7f2]"
-            >
-              <h2 className="text-base font-semibold text-[#183a2a]">
-                {locale === "zh" ? "测试管理台" : "Test Admin"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[#55715f]">
-                {locale === "zh"
-                  ? "重置玩家、补资源、清空测试数据。"
-                  : "Reset players, grant resources, and clear test data."}
-              </p>
-            </Link>
-          ) : null}
         </section>
       ) : null}
 
@@ -224,43 +207,30 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <>
           <section className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-5 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
             <h2 className="text-lg font-semibold text-[#183a2a]">
-              {locale === "zh" ? "正在扩展" : "Expanding Next"}
+              {locale === "zh" ? "主线提醒" : "Route Notes"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#55715f]">
               {locale === "zh"
-                ? "主线已经进一步扩展到后 5 个区域，当前更适合继续观察后段养成节奏、Boss 门槛和新区域掉落是否足够有辨识度。"
-                : "The main route now extends through 5 more late-game regions, so the next focus is observing late-stage pacing, boss gates, and whether the new drop themes feel distinct enough."}
+                ? "如果主线卡住，优先回挂机、背包和角色页检查收益、强化与词缀搭配，再决定是否继续冲击下一个区域。"
+                : "If progression stalls, check idle income, upgrades, and affix choices before forcing the next area."}
             </p>
           </section>
-
-          {adminToolsEnabled ? (
-            <section className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-5 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
-              <h2 className="text-lg font-semibold text-[#183a2a]">
-                {locale === "zh" ? "测试工具" : "Test Tools"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[#55715f]">
-                {locale === "zh"
-                  ? "当前环境已开放 /admin，可以直接重置玩家、补金币材料，或清空整个测试服。"
-                  : "This environment exposes /admin so you can reset players, grant resources, or clear the whole test server."}
-              </p>
-            </section>
-          ) : null}
 
           <section className="grid grid-cols-2 gap-3">
             <div className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-4 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
               <p className="text-xs uppercase tracking-[0.14em] text-[#6c8a72]">
-                {locale === "zh" ? "界面状态" : "UI Status"}
+                {locale === "zh" ? "主线路线" : "Main Route"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[#183a2a]">
-                {locale === "zh" ? "主页面统一完成" : "Core Pages Unified"}
+                {locale === "zh" ? "10 个主线区域" : "10 Main Regions"}
               </p>
             </div>
             <div className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-4 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">
               <p className="text-xs uppercase tracking-[0.14em] text-[#6c8a72]">
-                {locale === "zh" ? "下一阶段" : "Next Phase"}
+                {locale === "zh" ? "守门强度" : "Gate Pressure"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[#183a2a]">
-                {locale === "zh" ? "主线扩展完成" : "Route Expansion Live"}
+                {locale === "zh" ? "后段更吃练度" : "Later Gates Hit Harder"}
               </p>
             </div>
           </section>

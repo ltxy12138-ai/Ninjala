@@ -35,24 +35,30 @@ describe("idle flavor logs", () => {
         ok: true,
         async json() {
           return {
-            output_text: JSON.stringify({
-              summary:
-                "Li 在新手竹林巡了一圈，背回 120 金币、60 经验，还顺手捡到一把沉稳青竹枪。",
-              claimableMinutes: 60,
-              gold: 120,
-              exp: 60,
-              materials: [
-                { materialId: "bamboo_shoot", amount: 6 },
-                { materialId: "river_stone", amount: 3 },
-              ],
-              items: [
-                {
-                  name: "沉稳青竹枪",
-                  slot: "weapon",
-                  rarity: "rare",
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    summary:
+                      "Li 在新手竹林巡了一圈，背回 120 金币、60 经验，还顺手捡到一把沉稳青竹枪。",
+                    claimableMinutes: 60,
+                    gold: 120,
+                    exp: 60,
+                    materials: [
+                      { materialId: "bamboo_shoot", amount: 6 },
+                      { materialId: "river_stone", amount: 3 },
+                    ],
+                    items: [
+                      {
+                        name: "沉稳青竹枪",
+                        slot: "weapon",
+                        rarity: "rare",
+                      },
+                    ],
+                  }),
                 },
-              ],
-            }),
+              },
+            ],
           };
         },
       }),
@@ -92,7 +98,13 @@ describe("idle flavor logs", () => {
         ok: true,
         async json() {
           return {
-            output_text: "not-json",
+            choices: [
+              {
+                message: {
+                  content: "not-json",
+                },
+              },
+            ],
           };
         },
       }),
@@ -109,23 +121,29 @@ describe("idle flavor logs", () => {
         ok: true,
         async json() {
           return {
-            output_text: JSON.stringify({
-              summary: "Li 带回了 999 金币和两件传说装备。",
-              claimableMinutes: 60,
-              gold: 999,
-              exp: 60,
-              materials: [
-                { materialId: "bamboo_shoot", amount: 6 },
-                { materialId: "river_stone", amount: 3 },
-              ],
-              items: [
-                {
-                  name: "沉稳青竹枪",
-                  slot: "weapon",
-                  rarity: "legendary",
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    summary: "Li 带回了 999 金币和两件传说装备。",
+                    claimableMinutes: 60,
+                    gold: 999,
+                    exp: 60,
+                    materials: [
+                      { materialId: "bamboo_shoot", amount: 6 },
+                      { materialId: "river_stone", amount: 3 },
+                    ],
+                    items: [
+                      {
+                        name: "沉稳青竹枪",
+                        slot: "weapon",
+                        rarity: "legendary",
+                      },
+                    ],
+                  }),
                 },
-              ],
-            }),
+              },
+            ],
           };
         },
       }),

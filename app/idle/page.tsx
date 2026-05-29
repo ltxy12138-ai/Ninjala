@@ -190,8 +190,8 @@ export default async function IdlePage({ searchParams }: IdlePageProps) {
       title={locale === "zh" ? "挂机区域" : "Idle Regions"}
       subtitle={
         locale === "zh"
-          ? "统一成总览、区域、材料三段，不用再整页往下翻。"
-          : "Idle flow now uses overview, regions, and materials tabs instead of one long page."
+          ? "先看这轮收益，再决定要不要换图继续刷。"
+          : "Review this round of gains first, then decide whether to keep farming or switch routes."
       }
     >
       <PlayerSummary

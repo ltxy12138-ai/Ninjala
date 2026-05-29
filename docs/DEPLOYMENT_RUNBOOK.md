@@ -164,8 +164,8 @@ SESSION_SECRET="请改成一段至少32位的随机字符串"
 NODE_ENV="production"
 
 # 可选：如果你希望启用 AI 挂机文案，再填写下面两项
-# OPENAI_API_KEY="你的OpenAIKey"
-# OPENAI_IDLE_LOG_MODEL="gpt-4.1-mini"
+# DEEPSEEK_API_KEY="你的DeepSeekKey"
+# DEEPSEEK_IDLE_LOG_MODEL="deepseek-v4-flash"
 EOF
 ```
 

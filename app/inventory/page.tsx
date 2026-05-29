@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   craftMaterialAction,
   dismantleItemAction,
+  dismantleSelectedItemsAction,
   forgeItemAction,
   reforgeItemAction,
 } from "@/app/actions/crafting";
@@ -10,6 +11,8 @@ import {
   enhanceItemAction,
   equipBestItemsAction,
   equipItemAction,
+  toggleItemLockAction,
+  unequipItemAction,
 } from "@/app/actions/equipment";
 import { ItemCard } from "@/components/game/ItemCard";
 import { MobileShell } from "@/components/layout/MobileShell";
@@ -18,6 +21,7 @@ import { getDb } from "@/lib/db";
 import {
   canAffordIngredients,
   canAffordRecipe,
+  getBulkDismantlePreview,
   getDismantlePreview,
   getForgePreviewsForUnlockedRegions,
   getRecipeDescription,
@@ -25,7 +29,12 @@ import {
   getReforgePreview,
   materialRecipeDefinitions,
 } from "@/lib/game/crafting";
-import { getFirstFreeEquipSlotIndex, getSlotCapacity, isItemEquipped } from "@/lib/game/equipment";
+import {
+  getFirstFreeEquipSlotIndex,
+  getSlotCapacity,
+  isItemEquipped,
+  sortInventoryItems,
+} from "@/lib/game/equipment";
 import { getEnhancementPreview } from "@/lib/game/enhancement";
 import { getEquipmentMechanicsSummary } from "@/lib/game/loot";
 import { normalizeUnlockedRegionIds } from "@/lib/game/progression";
@@ -127,6 +136,18 @@ function getInventoryMessage(
         return locale === "zh"
           ? "装备已经分解，材料已回收到仓库。"
           : "Item dismantled and materials were returned to your stash.";
+      case "bulk_dismantled":
+        return locale === "zh"
+          ? "这一批未装备物品已经全部分解，材料已统一回收到仓库。"
+          : "All selected unequipped items were dismantled and the materials were returned to your stash.";
+      case "no_items":
+        return locale === "zh"
+          ? "这次没有可分解的未装备物品。"
+          : "There were no unequipped items available to dismantle this time.";
+      case "locked_item":
+        return locale === "zh"
+          ? "这件装备已经锁定，先解锁再处理。"
+          : "This item is locked. Unlock it before dismantling.";
       case "equipped_item":
         return locale === "zh"
           ? "已装备的物品不能直接分解，先卸下再处理。"
@@ -199,6 +220,18 @@ function getInventoryMessage(
       return locale === "zh"
         ? "装备已穿戴，战力已刷新。"
         : "Item equipped and power refreshed.";
+    case "unequipped":
+      return locale === "zh"
+        ? "装备已经卸下。"
+        : "Item unequipped.";
+    case "locked":
+      return locale === "zh"
+        ? "这件装备已经锁定，不会参与分解。"
+        : "This item is now locked and will be skipped by dismantling.";
+    case "unlocked":
+      return locale === "zh"
+        ? "这件装备已经解锁。"
+        : "This item has been unlocked.";
     case "best":
       return locale === "zh"
         ? "已经为每个槽位穿上当前最优装备。"
@@ -232,24 +265,24 @@ function getInventorySubtitle(tab: InventoryTab, locale: "zh" | "en") {
   switch (tab) {
     case "enhance":
       return locale === "zh"
-        ? "分页格子背包，专门处理强化和重铸。"
-        : "Paged gear grid focused on enhancement and reforging.";
+        ? "集中处理强化与重铸，把手上的装备继续压一压。"
+        : "Focus on enhancement and reforging to squeeze more out of your gear.";
     case "forge":
       return locale === "zh"
-        ? "只看定向锻造，避免把工坊信息和背包混在一起。"
-        : "A dedicated forge tab so workshop actions are separate from the bag.";
+        ? "按槽位定向锻造，优先补齐当前最缺的部位。"
+        : "Forge by slot and patch the weakest part of your build.";
     case "craft":
       return locale === "zh"
-        ? "只看材料合成配方。"
-        : "A dedicated tab for material crafting recipes.";
+        ? "把低阶材料继续精炼成更高阶产物。"
+        : "Refine lower-tier materials into stronger resources.";
     case "materials":
       return locale === "zh"
-        ? "只看材料库存，不再和装备列表混在一起。"
-        : "A dedicated materials tab instead of mixing stash and gear.";
+        ? "看看仓库里攒了什么，再决定下一张图刷哪里。"
+        : "Check your stockpile before choosing the next farming route.";
     default:
       return locale === "zh"
-        ? "分页格子背包，点击格子查看装备详情。"
-        : "A paged grid inventory. Tap a slot to inspect gear details.";
+        ? "先翻背包看掉落，再决定穿戴、分解还是继续养。"
+        : "Browse drops first, then decide what to equip, salvage, or keep.";
   }
 }
 
@@ -312,12 +345,10 @@ export default async function InventoryPage({
     getLocale(),
   ]);
   const db = getDb();
-  const [items, materials, unlockedRows] = await Promise.all([
+  const [rawItems, materials, unlockedRows] = await Promise.all([
     db.itemInstance.findMany({
       where: { playerId: player.id },
       orderBy: [
-        { equippedAt: "desc" },
-        { equipSlotIndex: "asc" },
         { enhancementLevel: "desc" },
         { createdAt: "desc" },
       ],
@@ -331,6 +362,12 @@ export default async function InventoryPage({
       select: { regionId: true },
     }),
   ]);
+  const items = sortInventoryItems(
+    rawItems.map((item) => ({
+      ...item,
+      slot: item.slot as ItemSlot,
+    })),
+  );
 
   const equipStatus = readSearchParam(params, "equip");
   const enhanceStatus = readSearchParam(params, "enhance");
@@ -379,6 +416,17 @@ export default async function InventoryPage({
   const pageItems = items.slice(
     (normalizedPage - 1) * pageSize,
     normalizedPage * pageSize,
+  );
+  const pageUnequippedItems = pageItems.filter((item) => !isItemEquipped(item));
+  const pageDismantleableItems = pageUnequippedItems.filter((item) => !item.isLocked);
+  const bulkDismantlePreview = getBulkDismantlePreview(
+    pageDismantleableItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      sourceRegionId: item.sourceRegionId,
+      rarity: item.rarity as ItemRarity,
+      enhancementLevel: item.enhancementLevel,
+    })),
   );
   const emptySlotCount = Math.max(0, pageSize - pageItems.length);
   const selectedItem =
@@ -469,7 +517,7 @@ export default async function InventoryPage({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-[#183a2a]">
-                  {locale === "zh" ? "分页背包" : "Paged Inventory"}
+                  {locale === "zh" ? "装备背包" : "Gear Bag"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-[#55715f]">
                   {locale === "zh"
@@ -478,16 +526,57 @@ export default async function InventoryPage({
                 </p>
               </div>
 
-              <form action={equipBestItemsAction}>
-                <input type="hidden" name="redirectTo" value={selectedHref} />
-                <button
-                  type="submit"
-                  className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-2xl bg-[#204b36] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#183a2a]"
-                >
-                  {locale === "zh" ? "一键最优" : "Equip Best"}
-                </button>
-              </form>
+              <div className="flex flex-col gap-2">
+                <form action={equipBestItemsAction}>
+                  <input type="hidden" name="redirectTo" value={selectedHref} />
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-2xl bg-[#204b36] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#183a2a]"
+                  >
+                    {locale === "zh" ? "一键最优" : "Equip Best"}
+                  </button>
+                </form>
+
+                {selectedTab === "bag" ? (
+                  <form action={dismantleSelectedItemsAction}>
+                    <input type="hidden" name="tab" value={selectedTab} />
+                    <input type="hidden" name="page" value={normalizedPage} />
+                    <input
+                      type="hidden"
+                      name="itemIds"
+                    value={JSON.stringify(pageDismantleableItems.map((item) => item.id))}
+                  />
+                    <button
+                      type="submit"
+                      disabled={pageDismantleableItems.length === 0}
+                      className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-2xl bg-[#efe6df] px-4 py-3 text-sm font-semibold text-[#7a4b2a] transition hover:bg-[#e7dacd] disabled:cursor-not-allowed disabled:bg-[#f5efea] disabled:text-[#b79d8b]"
+                    >
+                      {locale === "zh"
+                        ? `一键分解本页${pageDismantleableItems.length > 0 ? ` (${pageDismantleableItems.length})` : ""}`
+                        : `Dismantle Page${pageDismantleableItems.length > 0 ? ` (${pageDismantleableItems.length})` : ""}`}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
             </div>
+
+            {selectedTab === "bag" && pageDismantleableItems.length > 0 ? (
+              <p className="mt-3 text-xs leading-5 text-[#55715f]">
+                {locale === "zh"
+                  ? `本页一键分解会处理 ${pageDismantleableItems.length} 件未装备且未锁定的物品，预计回收 ${bulkDismantlePreview.materials
+                      .map(
+                        (material) =>
+                          `${getMaterialName(material.materialId, locale)} x${material.amount}`,
+                      )
+                      .join("、")}。`
+                  : `Page dismantle will process ${pageDismantleableItems.length} unequipped unlocked items and recover ${bulkDismantlePreview.materials
+                      .map(
+                        (material) =>
+                          `${getMaterialName(material.materialId, locale)} x${material.amount}`,
+                      )
+                      .join(", ")}.`}
+              </p>
+            ) : null}
 
             {pageItems.length > 0 ? (
               <div className="mt-4">
@@ -530,6 +619,10 @@ export default async function InventoryPage({
                                 : locale === "zh"
                                   ? "装"
                                   : "EQ"}
+                            </span>
+                          ) : item.isLocked ? (
+                            <span className="rounded-full bg-[#f4ead8] px-2 py-1 text-[10px] font-semibold text-[#8b5a22]">
+                              {locale === "zh" ? "锁" : "LK"}
                             </span>
                           ) : null}
                         </div>
@@ -726,6 +819,40 @@ export default async function InventoryPage({
                               : `Owned: ${getMaterialName(preview.materialId, locale)} x${ownedMaterialAmount}`}
                           </p>
                         ) : null}
+                        <p className="mt-1 text-xs text-[#55715f]">
+                          {selectedItem.isLocked
+                            ? locale === "zh"
+                              ? "当前状态：已锁定，不参与一键分解。"
+                              : "Status: locked and excluded from page dismantle."
+                            : locale === "zh"
+                              ? "当前状态：未锁定。"
+                              : "Status: unlocked."}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <form action={toggleItemLockAction}>
+                          <input type="hidden" name="itemId" value={selectedItem.id} />
+                          <input type="hidden" name="redirectTo" value={selectedHref} />
+                          <button
+                            type="submit"
+                            className={`inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                              selectedItem.isLocked
+                                ? "bg-[#f4ead8] text-[#8b5a22] hover:bg-[#ecdcbf]"
+                                : "bg-[#eef3ee] text-[#355645] hover:bg-[#dfe8df]"
+                            }`}
+                          >
+                            {selectedItem.isLocked
+                              ? locale === "zh"
+                                ? "解除锁定"
+                                : "Unlock"
+                              : locale === "zh"
+                                ? "锁定装备"
+                                : "Lock Item"}
+                          </button>
+                        </form>
+
+                        <div />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -766,16 +893,23 @@ export default async function InventoryPage({
                         ) : (
                           <>
                             {selectedItem.equippedAt ? (
-                              <div className="flex min-h-11 items-center justify-center rounded-2xl bg-[#eef3ee] px-4 py-3 text-sm font-semibold text-[#51705c]">
-                                {selectedItem.slot === "accessory" &&
-                                selectedItem.equipSlotIndex !== null
-                                  ? locale === "zh"
-                                    ? `已装备在 ${getAccessorySlotLabel(selectedItem.equipSlotIndex, locale)}`
-                                    : `Equipped in ${getAccessorySlotLabel(selectedItem.equipSlotIndex, locale)}`
-                                  : locale === "zh"
-                                    ? "已装备"
-                                    : "Equipped"}
-                              </div>
+                              <form action={unequipItemAction}>
+                                <input type="hidden" name="itemId" value={selectedItem.id} />
+                                <input type="hidden" name="redirectTo" value={selectedHref} />
+                                <button
+                                  type="submit"
+                                  className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl bg-[#eef3ee] px-4 py-3 text-sm font-semibold text-[#355645] transition hover:bg-[#dfe8df]"
+                                >
+                                  {selectedItem.slot === "accessory" &&
+                                  selectedItem.equipSlotIndex !== null
+                                    ? locale === "zh"
+                                      ? `卸下 ${getAccessorySlotLabel(selectedItem.equipSlotIndex, locale)}`
+                                      : `Unequip ${getAccessorySlotLabel(selectedItem.equipSlotIndex, locale)}`
+                                    : locale === "zh"
+                                      ? "卸下装备"
+                                      : "Unequip"}
+                                </button>
+                              </form>
                             ) : selectedItem.slot === "accessory" ? (
                               <div className="grid grid-cols-2 gap-2">
                                 {accessoryIndexes.map((slotIndex) => {
@@ -831,14 +965,17 @@ export default async function InventoryPage({
                                 <input type="hidden" name="selected" value={selectedItem.id} />
                                 <button
                                   type="submit"
+                                  disabled={selectedItem.isLocked}
                                   className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl bg-[#efe6df] px-4 py-3 text-sm font-semibold text-[#7a4b2a] transition hover:bg-[#e7dacd]"
                                 >
                                   {locale === "zh" ? "分解回收" : "Dismantle"}
                                 </button>
                               </form>
                             ) : (
-                              <div className="flex min-h-11 items-center justify-center rounded-2xl bg-[#eef3ee] px-4 py-3 text-sm font-semibold text-[#51705c]">
-                                {locale === "zh" ? "已锁定" : "Locked"}
+                              <div className="flex min-h-11 items-center justify-center rounded-2xl bg-[#eef3ee] px-4 py-3 text-center text-sm font-semibold text-[#51705c]">
+                                {locale === "zh"
+                                  ? "已装备物品需要先卸下，再进行分解。"
+                                  : "Equipped items must be unequipped before dismantling."}
                               </div>
                             )}
                           </>
@@ -904,8 +1041,8 @@ export default async function InventoryPage({
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[#55715f]">
                         {locale === "zh"
-                          ? "锻造出的装备会直接进入背包格子页。"
-                          : "Forged equipment goes directly into the paged inventory grid."}
+                          ? "锻造出的装备会直接放进背包，方便马上比较。"
+                          : "Forged equipment goes straight into your bag so you can compare it immediately."}
                       </p>
                     </div>
 
@@ -966,8 +1103,8 @@ export default async function InventoryPage({
                       </p>
                       <p className="mt-1 text-xs leading-5 text-[#55715f]">
                         {locale === "zh"
-                          ? "合成后会停留在这个标签页，方便连续处理材料。"
-                          : "Crafting keeps you on this tab so you can process materials continuously."}
+                          ? "可以连续处理材料，把仓库一路往上提。"
+                          : "Stay here and keep refining materials in one run."}
                       </p>
                     </div>
 

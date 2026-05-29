@@ -271,9 +271,9 @@ Expected initial environment keys:
 - `DATABASE_URL`
 - `SESSION_SECRET`
 - `NODE_ENV`
-- `OPENAI_API_KEY` for later AI features only
+- `DEEPSEEK_API_KEY` for later AI features only
 
-`OPENAI_API_KEY` must be optional in V1 and absence must not break gameplay.
+`DEEPSEEK_API_KEY` must be optional in V1 and absence must not break gameplay.
 
 ## Deployment Notes
 

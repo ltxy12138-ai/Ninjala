@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "企鹅忍者村",
-  description: "一个面向小范围好友测试的移动端放置刷宝 RPG。",
+  description: "一个以刷装、挂机与主线推进为核心的移动端放置 RPG。",
 };
 
 export default function RootLayout({

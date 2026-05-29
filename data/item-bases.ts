@@ -526,8 +526,146 @@ export const itemBaseMap = new Map(
   itemBaseDefinitions.map((itemBase) => [itemBase.id, itemBase]),
 );
 
+const statFocusLabels = {
+  zh: {
+    attack: "进攻",
+    defense: "防守",
+    hp: "生存",
+    luck: "幸运",
+    crit: "爆发",
+    goldBonus: "金币收益",
+    expBonus: "经验收益",
+    dropBonus: "掉落收益",
+  },
+  en: {
+    attack: "attack",
+    defense: "defense",
+    hp: "survivability",
+    luck: "luck",
+    crit: "burst",
+    goldBonus: "gold income",
+    expBonus: "experience gain",
+    dropBonus: "drop gain",
+  },
+} satisfies Record<Locale, Record<StatKey, string>>;
+
+function joinFocusLabels(labels: string[], locale: Locale) {
+  if (labels.length === 0) {
+    return locale === "zh" ? "基础能力" : "core basics";
+  }
+
+  if (labels.length === 1) {
+    return labels[0]!;
+  }
+
+  if (labels.length === 2) {
+    return locale === "zh" ? `${labels[0]}与${labels[1]}` : `${labels[0]} and ${labels[1]}`;
+  }
+
+  const head = labels.slice(0, -1).join(locale === "zh" ? "、" : ", ");
+  const tail = labels[labels.length - 1]!;
+
+  return locale === "zh" ? `${head}与${tail}` : `${head}, and ${tail}`;
+}
+
+function getBaseItemPlaystyle(statKeys: StatKey[], locale: Locale) {
+  const keySet = new Set(statKeys);
+  const hasResource = keySet.has("goldBonus") || keySet.has("expBonus") || keySet.has("dropBonus");
+  const hasOffense = keySet.has("attack") || keySet.has("crit");
+  const hasDefense = keySet.has("defense") || keySet.has("hp");
+  const hasLuck = keySet.has("luck");
+
+  if (hasResource && hasOffense) {
+    return locale === "zh"
+      ? "兼顾刷图收益与主线推进"
+      : "It balances farming value with forward progression.";
+  }
+
+  if (hasResource) {
+    return locale === "zh"
+      ? "更适合挂机、刷图和长线养成"
+      : "It leans toward idle farming and long-term growth.";
+  }
+
+  if (hasOffense && !hasDefense) {
+    return locale === "zh"
+      ? "更适合推进主线和挑战 Boss"
+      : "It is best suited for pushing story gates and bosses.";
+  }
+
+  if (hasDefense && !hasOffense) {
+    return locale === "zh"
+      ? "更适合稳住战线和硬吃压力"
+      : "It is built for steadier survivability under pressure.";
+  }
+
+  if (hasLuck) {
+    return locale === "zh"
+      ? "适合补足过渡期的灵活度"
+      : "It is a flexible piece for smoothing out transition builds.";
+  }
+
+  return locale === "zh"
+    ? "适合补齐当前配装的基础短板"
+    : "It helps patch the basic gaps in a build.";
+}
+
+function getBaseItemSlotLead(slot: ItemSlot, locale: Locale) {
+  if (locale === "zh") {
+    switch (slot) {
+      case "weapon":
+        return "这是一件偏主动推进的武器";
+      case "helmet":
+        return "这是一件用来稳住前排的头部装备";
+      case "armor":
+        return "这是一件负责扛线的护甲";
+      case "boots":
+        return "这是一件用来补节奏的靴子";
+      case "accessory":
+        return "这是一件负责补足缺口的饰品";
+    }
+  }
+
+  switch (slot) {
+    case "weapon":
+      return "This weapon is meant to drive your pushes";
+    case "helmet":
+      return "This headpiece is meant to steady the front line";
+    case "armor":
+      return "This armor is meant to anchor your build";
+    case "boots":
+      return "These boots are meant to smooth out your tempo";
+    case "accessory":
+      return "This accessory is meant to fill whatever your build lacks";
+  }
+}
+
 export function getItemBaseName(baseItemId: string, locale: Locale) {
   const itemBase = itemBaseMap.get(baseItemId);
 
   return itemBase ? pickLocalizedText(locale, itemBase.name) : baseItemId;
+}
+
+export function getItemBaseDescription(baseItemId: string, locale: Locale) {
+  const itemBase = itemBaseMap.get(baseItemId);
+
+  if (!itemBase) {
+    return baseItemId;
+  }
+
+  const activeStatKeys = (Object.keys(itemBase.statRanges) as StatKey[]).filter(
+    (statKey) => itemBase.statRanges[statKey],
+  );
+  const focus = joinFocusLabels(
+    activeStatKeys.map((statKey) => statFocusLabels[locale][statKey]),
+    locale,
+  );
+  const playstyle = getBaseItemPlaystyle(activeStatKeys, locale);
+  const lead = getBaseItemSlotLead(itemBase.slot, locale);
+
+  if (locale === "zh") {
+    return `${lead}，主要强化${focus}，${playstyle}。`;
+  }
+
+  return `${lead}, with a focus on ${focus}. ${playstyle}`;
 }

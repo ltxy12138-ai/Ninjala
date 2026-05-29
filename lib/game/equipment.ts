@@ -20,6 +20,12 @@ export type EquippedItemSnapshot = Partial<EquipmentStats> & {
   equipSlotIndex: number | null;
 };
 
+export type InventorySortableItemSnapshot = EquippedItemSnapshot & {
+  isLocked: boolean;
+  enhancementLevel: number;
+  createdAt: Date;
+};
+
 export function getSlotCapacity(slot: ItemSlot) {
   return slotCapacities[slot];
 }
@@ -131,4 +137,52 @@ export function flattenBestItemsBySlot(
   selectedItems: Map<ItemSlot, EquippedItemSnapshot[]>,
 ) {
   return itemSlots.flatMap((slot) => selectedItems.get(slot) ?? []);
+}
+
+export function compareInventoryItems(
+  left: InventorySortableItemSnapshot,
+  right: InventorySortableItemSnapshot,
+) {
+  const leftEquipped = isItemEquipped(left);
+  const rightEquipped = isItemEquipped(right);
+
+  if (leftEquipped !== rightEquipped) {
+    return leftEquipped ? -1 : 1;
+  }
+
+  if (left.isLocked !== right.isLocked) {
+    return left.isLocked ? -1 : 1;
+  }
+
+  if (leftEquipped && rightEquipped) {
+    const leftSlotOrder = itemSlots.indexOf(left.slot);
+    const rightSlotOrder = itemSlots.indexOf(right.slot);
+
+    if (leftSlotOrder !== rightSlotOrder) {
+      return leftSlotOrder - rightSlotOrder;
+    }
+
+    const leftIndex = left.equipSlotIndex ?? Number.MAX_SAFE_INTEGER;
+    const rightIndex = right.equipSlotIndex ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftIndex !== rightIndex) {
+      return leftIndex - rightIndex;
+    }
+  }
+
+  if (left.enhancementLevel !== right.enhancementLevel) {
+    return right.enhancementLevel - left.enhancementLevel;
+  }
+
+  if (left.createdAt.getTime() !== right.createdAt.getTime()) {
+    return right.createdAt.getTime() - left.createdAt.getTime();
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+export function sortInventoryItems<TItem extends InventorySortableItemSnapshot>(
+  items: TItem[],
+) {
+  return [...items].sort(compareInventoryItems);
 }

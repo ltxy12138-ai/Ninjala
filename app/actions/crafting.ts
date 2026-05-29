@@ -6,11 +6,13 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/lib/db";
 import {
+  buildBulkDismantleLogMessage,
   buildCraftLogMessage,
   buildDismantleLogMessage,
   buildForgeLogMessage,
   buildReforgeLogMessage,
   canAffordIngredients,
+  getBulkDismantlePreview,
   getDismantlePreview,
   getForgePreview,
   getMaterialRecipeById,
@@ -551,6 +553,10 @@ export async function dismantleItemAction(formData: FormData) {
       return { ok: false as const, reason: "missing_item" };
     }
 
+    if (item.isLocked) {
+      return { ok: false as const, reason: "locked_item" };
+    }
+
     if (item.equippedAt) {
       return { ok: false as const, reason: "equipped_item" };
     }
@@ -617,6 +623,109 @@ export async function dismantleItemAction(formData: FormData) {
     });
 
     return { ok: true as const, reason: "dismantled" };
+  });
+
+  revalidateInventoryPages();
+
+  redirect(
+    buildInventoryRedirectUrl({
+      ...context,
+      dismantle: result.ok ? "success" : "error",
+      detail: result.reason,
+    }),
+  );
+}
+
+export async function dismantleSelectedItemsAction(formData: FormData) {
+  const [{ player }, locale] = await Promise.all([
+    requireCurrentPlayer(),
+    getLocale(),
+  ]);
+  const context = getInventoryContextFromFormData(formData);
+  const itemIdsRaw = String(formData.get("itemIds") ?? "[]");
+  const db = getDb();
+
+  let itemIds: string[] = [];
+
+  try {
+    const parsed = JSON.parse(itemIdsRaw) as unknown;
+    itemIds = Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string")
+      : [];
+  } catch {
+    itemIds = [];
+  }
+
+  const result = await db.$transaction(async (tx) => {
+    const items = await tx.itemInstance.findMany({
+      where: {
+        playerId: player.id,
+        id: {
+          in: itemIds,
+        },
+      },
+    });
+    const dismantleableItems = items.filter((item) => !item.equippedAt && !item.isLocked);
+
+    if (dismantleableItems.length === 0) {
+      return { ok: false as const, reason: "no_items" };
+    }
+
+    const preview = getBulkDismantlePreview(
+      dismantleableItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        sourceRegionId: item.sourceRegionId,
+        rarity: item.rarity as "common" | "rare" | "epic" | "legendary",
+        enhancementLevel: item.enhancementLevel,
+      })),
+    );
+
+    await tx.itemInstance.deleteMany({
+      where: {
+        playerId: player.id,
+        id: {
+          in: dismantleableItems.map((item) => item.id),
+        },
+      },
+    });
+
+    for (const material of preview.materials) {
+      await tx.materialStack.upsert({
+        where: {
+          playerId_materialId: {
+            playerId: player.id,
+            materialId: material.materialId,
+          },
+        },
+        update: {
+          amount: {
+            increment: material.amount,
+          },
+        },
+        create: {
+          playerId: player.id,
+          materialId: material.materialId,
+          amount: material.amount,
+        },
+      });
+    }
+
+    await tx.gameLog.create({
+      data: {
+        playerId: player.id,
+        type: "ITEM_DISMANTLE",
+        message: buildBulkDismantleLogMessage(preview, locale),
+        payload: JSON.stringify({
+          materials: preview.materials,
+          itemIds: dismantleableItems.map((item) => item.id),
+          itemNames: dismantleableItems.map((item) => item.name),
+          itemCount: preview.itemCount,
+        }),
+      },
+    });
+
+    return { ok: true as const, reason: "bulk_dismantled" };
   });
 
   revalidateInventoryPages();

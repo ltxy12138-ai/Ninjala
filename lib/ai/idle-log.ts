@@ -159,6 +159,11 @@ function extractResponseText(payload: unknown) {
         text?: string;
       }>;
     }>;
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
   };
 
   if (typeof record.output_text === "string" && record.output_text.trim()) {
@@ -170,7 +175,15 @@ function extractResponseText(payload: unknown) {
     .map((content) => content.text)
     .find((value): value is string => typeof value === "string" && value.trim().length > 0);
 
-  return nestedText ?? null;
+  if (nestedText) {
+    return nestedText;
+  }
+
+  const choiceText = record.choices?.find(
+    (entry) => typeof entry.message?.content === "string" && entry.message.content.trim().length > 0,
+  )?.message?.content;
+
+  return choiceText ?? null;
 }
 
 export function validateIdleFlavorOutput(
@@ -253,7 +266,7 @@ export async function generateIdleFlavorLog(
 
   try {
     const response = await Promise.race([
-      fetchImpl("https://api.openai.com/v1/responses", {
+      fetchImpl("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,54 +274,40 @@ export async function generateIdleFlavorLog(
         },
         signal: controller.signal,
         body: JSON.stringify({
-          model: options.model ?? process.env.OPENAI_IDLE_LOG_MODEL ?? "gpt-5-mini",
-          input: [
+          model: options.model ?? process.env.DEEPSEEK_IDLE_LOG_MODEL ?? "deepseek-v4-flash",
+          response_format: {
+            type: "json_object",
+          },
+          messages: [
             {
               role: "system",
-              content: [
-                {
-                  type: "input_text",
-                  text:
-                    payload.locale === "zh"
-                      ? "你是一个放置刷宝 RPG 的挂机日志文案助手。你只能基于提供的真实奖励数据写 1 句简短中文日志，不能发明任何奖励、数值、材料、装备或战斗结果。"
-                      : "You are an idle RPG flavor log assistant. Write one short English sentence using only the provided true rewards. Never invent rewards, values, materials, items, or combat outcomes.",
-                },
-              ],
+              content:
+                payload.locale === "zh"
+                  ? "你是一个放置刷宝 RPG 的挂机日志文案助手。你只能基于提供的真实奖励数据写 1 句简短中文日志，不能发明任何奖励、数值、材料、装备或战斗结果。你必须返回单个 JSON 对象，字段必须完整匹配要求。"
+                  : "You are an idle RPG flavor log assistant. Write one short English sentence using only the provided true rewards. Never invent rewards, values, materials, items, or combat outcomes. You must return one JSON object with every required field.",
             },
             {
               role: "user",
-              content: [
-                {
-                  type: "input_text",
-                  text: JSON.stringify({
-                    instruction:
-                      payload.locale === "zh"
-                        ? "返回 JSON。summary 必须简短自然，字段中的数值、材料和装备必须与输入完全一致。"
-                        : "Return JSON. The summary must be short and natural, and every value, material, and item must match the input exactly.",
-                    payload: {
-                      locale: payload.locale,
-                      playerName: payload.playerName,
-                      regionName: payload.regionName,
-                      regionDescription: payload.regionDescription,
-                      claimableMinutes: payload.claimableMinutes,
-                      gold: payload.gold,
-                      exp: payload.exp,
-                      materials: payload.materials,
-                      items: payload.items,
-                    },
-                  }),
+              content: JSON.stringify({
+                instruction:
+                  payload.locale === "zh"
+                    ? "返回 JSON。summary 必须简短自然，字段中的数值、材料和装备必须与输入完全一致。不要输出 markdown，不要补充解释。"
+                    : "Return JSON. The summary must be short and natural, and every value, material, and item must match the input exactly. Do not output markdown or extra explanation.",
+                schema: buildSchema(),
+                payload: {
+                  locale: payload.locale,
+                  playerName: payload.playerName,
+                  regionName: payload.regionName,
+                  regionDescription: payload.regionDescription,
+                  claimableMinutes: payload.claimableMinutes,
+                  gold: payload.gold,
+                  exp: payload.exp,
+                  materials: payload.materials,
+                  items: payload.items,
                 },
-              ],
+              }),
             },
           ],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "idle_flavor_log",
-              strict: true,
-              schema: buildSchema(),
-            },
-          },
         }),
       }),
       new Promise<never>((_, reject) => {

@@ -181,8 +181,8 @@ export default async function CharactersPage({
       title={locale === "zh" ? "角色" : "Character"}
       subtitle={
         locale === "zh"
-          ? "角色面板和穿戴槽位拆开了，现在也支持双饰品位。"
-          : "Stats and gear stay separate here, now with two accessory slots."
+          ? "查看角色面板、战力构成和当前穿戴。"
+          : "Check your stats, power profile, and current gear."
       }
     >
       {status ? (
@@ -344,7 +344,9 @@ export default async function CharactersPage({
               mechanics={{
                 ...(selectedItemMechanics ?? {
                   baseItemName: "",
+                  baseItemDescription: "",
                   affixNames: [],
+                  affixSummaries: [],
                   sourceRegionName: "",
                   rarityLabel: "",
                   affixCount: 0,

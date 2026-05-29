@@ -236,6 +236,49 @@ export async function unequipItemAction(formData: FormData) {
   );
 }
 
+export async function toggleItemLockAction(formData: FormData) {
+  const { player } = await requireCurrentPlayer();
+  const itemId = String(formData.get("itemId") ?? "");
+  const redirectTo = String(formData.get("redirectTo") ?? "/inventory");
+  const db = getDb();
+
+  const result = await db.$transaction(async (tx) => {
+    const item = await tx.itemInstance.findUnique({
+      where: { id: itemId },
+      select: {
+        id: true,
+        playerId: true,
+        isLocked: true,
+      },
+    });
+
+    if (!item || item.playerId !== player.id) {
+      return { ok: false as const, reason: "missing_item" };
+    }
+
+    await tx.itemInstance.update({
+      where: { id: item.id },
+      data: {
+        isLocked: !item.isLocked,
+      },
+    });
+
+    return {
+      ok: true as const,
+      reason: item.isLocked ? "unlocked" : "locked",
+    };
+  });
+
+  revalidateGamePages();
+
+  redirect(
+    buildRedirectUrl(redirectTo, {
+      equip: result.ok ? "success" : "error",
+      detail: result.reason,
+    }),
+  );
+}
+
 export async function equipBestItemsAction(formData: FormData) {
   const { player } = await requireCurrentPlayer();
   const redirectTo = String(formData.get("redirectTo") ?? "/inventory");

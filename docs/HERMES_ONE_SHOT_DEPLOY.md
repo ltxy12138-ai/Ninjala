@@ -39,7 +39,7 @@ Hermes 执行时应使用下面这些固定信息：
 
 1. `DB_PASSWORD`
 2. `SESSION_SECRET`
-3. `OPENAI_API_KEY`
+3. `DEEPSEEK_API_KEY`
    说明：可选；如果你暂时不想启用 AI 挂机文案，就留空
 
 建议：
@@ -96,7 +96,7 @@ hermes --tui
 请使用以下密钥：
 - DB_PASSWORD=把这里替换成你的数据库密码
 - SESSION_SECRET=把这里替换成你的会话密钥
-- OPENAI_API_KEY=把这里替换成你的OpenAIKey，没有就留空
+- DEEPSEEK_API_KEY=把这里替换成你的DeepSeekKey，没有就留空
 
 执行目标：
 1. 检查系统是否为 Ubuntu 24.04，并检查 node、npm、git、nginx、psql、pm2 是否可用
@@ -113,7 +113,7 @@ hermes --tui
    - DATABASE_URL=postgresql://root:DB_PASSWORD@127.0.0.1:5432/Ninjala?schema=public
    - SESSION_SECRET=我提供的 SESSION_SECRET
    - NODE_ENV=production
-   - OPENAI_API_KEY=我提供的值
+   - DEEPSEEK_API_KEY=我提供的值
 6. 安装依赖并执行：
    - npm install
    - npx prisma generate --schema prisma/schema.prisma

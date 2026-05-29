@@ -286,7 +286,7 @@ export async function claimIdleRewardsAction(formData: FormData) {
       })),
       fallbackMessage: result.message,
     }, {
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.DEEPSEEK_API_KEY,
     });
 
     let nextPayload: Record<string, unknown> = {};

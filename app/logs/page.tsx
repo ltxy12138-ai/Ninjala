@@ -209,8 +209,8 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
       title={locale === "zh" ? "游戏日志" : "Game Logs"}
       subtitle={
         locale === "zh"
-          ? "改成了分页和双视图，不用再一路滚到底找记录。"
-          : "The log now uses paged views so you do not need to scroll through one long feed."
+          ? "按时间或奖励回看最近发生了什么。"
+          : "Review recent activity by timeline or by rewards."
       }
     >
       <section className="rounded-[24px] border border-[#d9e7d8] bg-white/95 p-4 shadow-[0_16px_40px_rgba(24,58,42,0.08)]">

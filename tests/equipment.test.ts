@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculatePowerFromEquippedItems,
   chooseBestItemsBySlot,
+  sortInventoryItems,
 } from "@/lib/game/equipment";
 
 describe("equipment selection", () => {
@@ -172,6 +173,48 @@ describe("equipment selection", () => {
     expect(selectedAccessories.map((item) => item.id)).toEqual([
       "accessory-2",
       "accessory-3",
+    ]);
+  });
+
+  it("sorts equipped items to the front of the inventory", () => {
+    const items = [
+      {
+        id: "bag-1",
+        slot: "weapon" as const,
+        equippedAt: null,
+        equipSlotIndex: null,
+        enhancementLevel: 5,
+        createdAt: new Date("2026-05-28T00:00:00.000Z"),
+        attack: 10,
+        defense: 0,
+        hp: 0,
+        luck: 0,
+        crit: 0,
+        goldBonus: 0,
+        expBonus: 0,
+        dropBonus: 0,
+      },
+      {
+        id: "eq-1",
+        slot: "helmet" as const,
+        equippedAt: new Date("2026-05-29T00:00:00.000Z"),
+        equipSlotIndex: 0,
+        enhancementLevel: 1,
+        createdAt: new Date("2026-05-27T00:00:00.000Z"),
+        attack: 0,
+        defense: 3,
+        hp: 8,
+        luck: 0,
+        crit: 0,
+        goldBonus: 0,
+        expBonus: 0,
+        dropBonus: 0,
+      },
+    ];
+
+    expect(sortInventoryItems(items).map((item) => item.id)).toEqual([
+      "eq-1",
+      "bag-1",
     ]);
   });
 });

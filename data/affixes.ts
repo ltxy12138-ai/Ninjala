@@ -315,8 +315,108 @@ export const affixMap = new Map(
   affixDefinitions.map((affix) => [affix.id, affix]),
 );
 
+const affixStatFocusLabels = {
+  zh: {
+    attack: "进攻",
+    defense: "防守",
+    hp: "生存",
+    luck: "幸运",
+    crit: "爆发",
+    goldBonus: "金币收益",
+    expBonus: "经验收益",
+    dropBonus: "掉落收益",
+  },
+  en: {
+    attack: "attack",
+    defense: "defense",
+    hp: "survivability",
+    luck: "luck",
+    crit: "burst",
+    goldBonus: "gold income",
+    expBonus: "experience gain",
+    dropBonus: "drop gain",
+  },
+} satisfies Record<Locale, Record<StatKey, string>>;
+
+function joinAffixFocusLabels(labels: string[], locale: Locale) {
+  if (labels.length === 0) {
+    return locale === "zh" ? "基础能力" : "core basics";
+  }
+
+  if (labels.length === 1) {
+    return labels[0]!;
+  }
+
+  if (labels.length === 2) {
+    return locale === "zh" ? `${labels[0]}与${labels[1]}` : `${labels[0]} and ${labels[1]}`;
+  }
+
+  const head = labels.slice(0, -1).join(locale === "zh" ? "、" : ", ");
+  const tail = labels[labels.length - 1]!;
+
+  return locale === "zh" ? `${head}与${tail}` : `${head}, and ${tail}`;
+}
+
 export function getAffixName(affixId: string, locale: Locale) {
   const affix = affixMap.get(affixId);
 
   return affix ? pickLocalizedText(locale, affix.name) : affixId;
+}
+
+export function getAffixDescription(affixId: string, locale: Locale) {
+  const affix = affixMap.get(affixId);
+
+  if (!affix) {
+    return affixId;
+  }
+
+  const activeStatKeys = (Object.keys(affix.statRanges) as StatKey[]).filter(
+    (statKey) => affix.statRanges[statKey],
+  );
+  const focus = joinAffixFocusLabels(
+    activeStatKeys.map((statKey) => affixStatFocusLabels[locale][statKey]),
+    locale,
+  );
+  const keySet = new Set(activeStatKeys);
+  const hasResource = keySet.has("goldBonus") || keySet.has("expBonus") || keySet.has("dropBonus");
+  const hasOffense = keySet.has("attack") || keySet.has("crit");
+  const hasDefense = keySet.has("defense") || keySet.has("hp");
+
+  if (locale === "zh") {
+    if (hasResource && hasOffense) {
+      return `这个词缀主要补强${focus}，偏向收益与推进两头兼顾。`;
+    }
+
+    if (hasResource) {
+      return `这个词缀主要补强${focus}，更适合刷图和养成节奏。`;
+    }
+
+    if (hasOffense && !hasDefense) {
+      return `这个词缀主要补强${focus}，更适合打出推进与爆发。`;
+    }
+
+    if (hasDefense && !hasOffense) {
+      return `这个词缀主要补强${focus}，更适合稳住生存线。`;
+    }
+
+    return `这个词缀主要补强${focus}，适合拿来补足当前配装。`;
+  }
+
+  if (hasResource && hasOffense) {
+    return `This affix boosts ${focus} and balances farming value with pushing power.`;
+  }
+
+  if (hasResource) {
+    return `This affix boosts ${focus} and is better for farming and long-term growth.`;
+  }
+
+  if (hasOffense && !hasDefense) {
+    return `This affix boosts ${focus} and leans toward pressure and burst.`;
+  }
+
+  if (hasDefense && !hasOffense) {
+    return `This affix boosts ${focus} and leans toward steadier survival.`;
+  }
+
+  return `This affix boosts ${focus} and helps round out the build.`;
 }

@@ -285,11 +285,11 @@ export default async function BossPage({ searchParams }: BossPageProps) {
       subtitle={
         selectedTab === "main"
           ? locale === "zh"
-            ? "主线 Boss 现在会以轻演出弹窗展示过程，后续区域也需要更高练度才能继续推进。"
-            : "Main bosses now use a lightweight battle replay and later regions demand more power before you can push forward."
+            ? "守门 Boss 决定主线推进，先看门槛，再挑最稳的时机出手。"
+            : "Gatekeeper bosses control story progress, so check the threshold before committing."
           : locale === "zh"
-            ? "只看全服世界 Boss，减少无关信息滚屏。"
-            : "Focus on the shared world boss without extra scrolling."
+            ? "全服目标都在这里，出手和领奖也都在这里完成。"
+            : "The shared target lives here, along with its attacks and reward claims."
       }
     >
       <PlayerSummary

@@ -142,8 +142,8 @@ export default async function RankingsPage({
       title={locale === "zh" ? "好友排行" : "Rankings"}
       subtitle={
         locale === "zh"
-          ? "榜单和祝福拆开了，不用在同一页里反复往下翻。"
-          : "The ladder and blessing flows are now separated into tabs."
+          ? "看看谁冲得更快，也别忘了送出今天的祝福。"
+          : "See who is climbing fastest, and do not forget today's blessing."
       }
     >
       {blessStatus ? (
