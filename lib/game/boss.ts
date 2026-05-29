@@ -21,7 +21,8 @@ export type BossActionErrorCode =
   | "PLAYER_NOT_FOUND"
   | "BOSS_NOT_FOUND"
   | "REGION_NOT_UNLOCKED"
-  | "DAILY_LIMIT";
+  | "DAILY_LIMIT"
+  | "POWER_GATE";
 
 export class BossActionError extends Error {
   constructor(
@@ -47,6 +48,39 @@ export type BossProgressSnapshot = {
   challengesUsed: number;
   clearCount: number;
   firstClearedAt: Date | null;
+};
+
+export type BossBattleTurn = {
+  actor: "system" | "player" | "boss";
+  message: string;
+  playerHp: number;
+  bossHp: number;
+  emphasis?: "crit" | "reward" | "unlock" | "danger" | "finish";
+};
+
+export type BossBattleSummary = {
+  playerName: string;
+  bossName: string;
+  regionName: string;
+  unlockTargetName: string | null;
+  playerPower: number;
+  bossPower: number;
+  playerStyle: string;
+  bossStyle: string;
+  playerStartHp: number;
+  playerEndHp: number;
+  bossStartHp: number;
+  bossEndHp: number;
+  didWin: boolean;
+  critTriggered: boolean;
+  battleTurns: BossBattleTurn[];
+  rewardSummary: {
+    gold: number;
+    exp: number;
+    materials: string[];
+    items: string[];
+    unlockText: string | null;
+  };
 };
 
 export type BossChallengeRepository = {
@@ -117,6 +151,24 @@ export function getBossById(bossId: string) {
   return bossDefinitions.find((boss) => boss.id === bossId) ?? null;
 }
 
+export function serializeBossBattleSummary(summary: BossBattleSummary) {
+  return Buffer.from(JSON.stringify(summary), "utf8").toString("base64url");
+}
+
+export function deserializeBossBattleSummary(serialized: string | null) {
+  if (!serialized) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      Buffer.from(serialized, "base64url").toString("utf8"),
+    ) as BossBattleSummary;
+  } catch {
+    return null;
+  }
+}
+
 function summarizeMaterials(
   materials: { materialId: string; amount: number }[],
   locale: Locale,
@@ -139,6 +191,284 @@ function summarizeItems(
   }
 
   return items.map((item) => item.name).join(locale === "zh" ? "、" : ", ");
+}
+
+function getPlayerBattleStyle(
+  effectStats: Partial<RewardEffectStats>,
+  locale: Locale,
+) {
+  const critScore = effectStats.crit ?? 0;
+  const farmingScore =
+    (effectStats.goldBonus ?? 0) + (effectStats.expBonus ?? 0) + (effectStats.dropBonus ?? 0);
+  const luckScore = effectStats.luck ?? 0;
+
+  if (critScore >= 4) {
+    return locale === "zh" ? "暴击压制" : "Critical Pressure";
+  }
+
+  if (farmingScore >= 8) {
+    return locale === "zh" ? "收益偏重" : "Reward Lean";
+  }
+
+  if (luckScore >= 5) {
+    return locale === "zh" ? "灵巧周旋" : "Skirmish Flow";
+  }
+
+  return locale === "zh" ? "均衡推进" : "Balanced Push";
+}
+
+function getBossBattleStyle(bossPower: number, locale: Locale) {
+  if (bossPower >= 4000) {
+    return locale === "zh" ? "终段守门者" : "Late-Game Gatekeeper";
+  }
+
+  if (bossPower >= 2000) {
+    return locale === "zh" ? "重压型首领" : "Heavy Pressure Boss";
+  }
+
+  return locale === "zh" ? "区域守门者" : "Regional Gatekeeper";
+}
+
+function buildBossBattleSummary(input: {
+  player: BossPlayerSnapshot;
+  bossName: string;
+  bossPower: number;
+  regionName: string;
+  unlockTargetName: string | null;
+  locale: Locale;
+  didWin: boolean;
+  winChance: number;
+  gold: number;
+  exp: number;
+  materials: { materialId: string; amount: number }[];
+  items: Array<GeneratedEquipment & { sourceRegionId: string }>;
+}) {
+  const {
+    player,
+    bossName,
+    bossPower,
+    regionName,
+    unlockTargetName,
+    locale,
+    didWin,
+    winChance,
+    gold,
+    exp,
+    materials,
+    items,
+  } = input;
+  const critTriggered =
+    (player.effectStats.crit ?? 0) >= 3 ||
+    ((player.effectStats.luck ?? 0) >= 4 && didWin) ||
+    winChance >= 0.72;
+  const playerStyle = getPlayerBattleStyle(player.effectStats, locale);
+  const bossStyle = getBossBattleStyle(bossPower, locale);
+  const playerStartHp = Math.max(180, Math.round(180 + player.power * 0.85));
+  const bossStartHp = Math.max(240, Math.round(240 + bossPower * 0.72));
+  const battleTurns: BossBattleTurn[] = [];
+
+  const pushTurn = (
+    actor: BossBattleTurn["actor"],
+    message: string,
+    playerHp: number,
+    bossHp: number,
+    emphasis?: BossBattleTurn["emphasis"],
+  ) => {
+    battleTurns.push({
+      actor,
+      message,
+      playerHp: Math.max(0, playerHp),
+      bossHp: Math.max(0, bossHp),
+      emphasis,
+    });
+  };
+
+  pushTurn(
+    "system",
+    locale === "zh"
+      ? `${player.name} 在 ${regionName} 对上了 ${bossName}，双方先拉开架势。`
+      : `${player.name} engages ${bossName} in ${regionName}.`,
+    playerStartHp,
+    bossStartHp,
+  );
+
+  if (didWin) {
+    const bossHpAfterFirstHit = Math.max(
+      1,
+      Math.round(bossStartHp * (0.72 - Math.min(0.08, winChance * 0.05))),
+    );
+    const playerHpAfterCounter = Math.max(
+      1,
+      Math.round(playerStartHp * (0.78 + Math.min(0.1, winChance * 0.08))),
+    );
+    const bossHpAfterBurst = critTriggered
+      ? Math.max(1, Math.round(bossHpAfterFirstHit * 0.34))
+      : Math.max(1, Math.round(bossHpAfterFirstHit * 0.52));
+    const playerHpBeforeFinish = Math.max(
+      1,
+      Math.round(playerHpAfterCounter * (critTriggered ? 0.92 : 0.84)),
+    );
+    const playerEndHp = Math.max(
+      1,
+      Math.round(playerHpBeforeFinish * (0.96 + Math.min(0.03, winChance * 0.02))),
+    );
+
+    pushTurn(
+      "player",
+      locale === "zh"
+        ? `${player.name} 率先压上，打出一轮试探进攻。`
+        : `${player.name} opens with a probing strike.`,
+      playerStartHp,
+      bossHpAfterFirstHit,
+    );
+    pushTurn(
+      "boss",
+      locale === "zh"
+        ? `${bossName} 顶着攻势反扑，逼得你后撤半步。`
+        : `${bossName} pushes back and forces a short retreat.`,
+      playerHpAfterCounter,
+      bossHpAfterFirstHit,
+      "danger",
+    );
+    pushTurn(
+      critTriggered ? "player" : "boss",
+      critTriggered
+        ? locale === "zh"
+          ? `你抓到破绽打出关键一击，战局开始倾斜。`
+          : `You find an opening and land a decisive burst.`
+        : locale === "zh"
+          ? `${bossName} 持续施压，但你仍稳住了节奏。`
+          : `${bossName} keeps the pressure on, but you steady the pace.`,
+      critTriggered ? playerHpAfterCounter : playerHpBeforeFinish,
+      bossHpAfterBurst,
+      critTriggered ? "crit" : undefined,
+    );
+    pushTurn(
+      "player",
+      locale === "zh"
+        ? `${player.name} 完成收招，${bossName} 被彻底击溃。`
+        : `${player.name} closes the fight and defeats ${bossName}.`,
+      playerEndHp,
+      0,
+      "finish",
+    );
+    pushTurn(
+      "system",
+      unlockTargetName
+        ? locale === "zh"
+          ? `战利品已经结算，新区域 ${unlockTargetName} 已可继续推进。`
+          : `Rewards have been granted and ${unlockTargetName} is now open.`
+        : locale === "zh"
+          ? "战利品已经结算，这一战没有新的区域可解锁。"
+          : "Rewards have been granted and no further region unlock remains.",
+      playerEndHp,
+      0,
+      unlockTargetName ? "unlock" : "reward",
+    );
+
+    return {
+      playerName: player.name,
+      bossName,
+      regionName,
+      unlockTargetName,
+      playerPower: player.power,
+      bossPower,
+      playerStyle,
+      bossStyle,
+      playerStartHp,
+      playerEndHp,
+      bossStartHp,
+      bossEndHp: 0,
+      didWin,
+      critTriggered,
+      battleTurns,
+      rewardSummary: {
+        gold,
+        exp,
+        materials: materials.map(
+          (material) => `${getMaterialName(material.materialId, locale)} x${material.amount}`,
+        ),
+        items: items.map((item) => item.name),
+        unlockText: unlockTargetName
+          ? locale === "zh"
+            ? `解锁区域：${unlockTargetName}`
+            : `Unlocked region: ${unlockTargetName}`
+          : null,
+      },
+    } satisfies BossBattleSummary;
+  }
+
+  const bossHpAfterFirstHit = Math.max(1, Math.round(bossStartHp * 0.84));
+  const playerHpAfterCounter = Math.max(1, Math.round(playerStartHp * 0.68));
+  const bossHpAfterLastPush = Math.max(1, Math.round(bossStartHp * 0.72));
+
+  pushTurn(
+    "player",
+    locale === "zh"
+      ? `${player.name} 先手突进，但没能撕开 ${bossName} 的防线。`
+      : `${player.name} strikes first but fails to break the defense.`,
+    playerStartHp,
+    bossHpAfterFirstHit,
+  );
+  pushTurn(
+    "boss",
+    locale === "zh"
+      ? `${bossName} 很快回敬一击，正面压制住了节奏。`
+      : `${bossName} answers quickly and takes over the pace.`,
+    playerHpAfterCounter,
+    bossHpAfterFirstHit,
+    "danger",
+  );
+  pushTurn(
+    "player",
+    locale === "zh"
+      ? `你尝试再次抢回主动，但输出仍旧不够彻底。`
+      : `You try to seize the initiative again, but the damage is not enough.`,
+    Math.max(1, Math.round(playerHpAfterCounter * 0.64)),
+    bossHpAfterLastPush,
+  );
+  pushTurn(
+    "boss",
+    locale === "zh"
+      ? `${bossName} 用最后一轮重击终结了这次挑战。`
+      : `${bossName} ends the challenge with one last heavy blow.`,
+    0,
+    bossHpAfterLastPush,
+    "finish",
+  );
+  pushTurn(
+    "system",
+    locale === "zh"
+      ? "这次没能突破守门战，继续提升练度后再回来挑战。"
+      : "You fail this time. Build more power and try again.",
+    0,
+    bossHpAfterLastPush,
+  );
+
+  return {
+    playerName: player.name,
+    bossName,
+    regionName,
+    unlockTargetName,
+    playerPower: player.power,
+    bossPower,
+    playerStyle,
+    bossStyle,
+    playerStartHp,
+    playerEndHp: 0,
+    bossStartHp,
+    bossEndHp: bossHpAfterLastPush,
+    didWin,
+    critTriggered,
+    battleTurns,
+    rewardSummary: {
+      gold: 0,
+      exp: 0,
+      materials: [],
+      items: [],
+      unlockText: null,
+    },
+  } satisfies BossBattleSummary;
 }
 
 export async function challengeBoss(
@@ -182,6 +512,18 @@ export async function challengeBoss(
     throw new BossActionError("BOSS_NOT_FOUND", "Boss not found.");
   }
 
+  const unlockTargetRegion = targetRegion.unlocksRegionId
+    ? getRegionById(targetRegion.unlocksRegionId)
+    : null;
+
+  if (
+    unlockTargetRegion &&
+    !isRegionUnlocked(unlockTargetRegion.id, unlockedRegionIds, player.currentRegionId) &&
+    player.power < unlockTargetRegion.recommendedPower
+  ) {
+    throw new BossActionError("POWER_GATE", "Challenge gate power not met.");
+  }
+
   const challengeDay = formatChallengeDay(now);
   const winChance = calculateBossCombatWinChance(
     player.power,
@@ -212,6 +554,22 @@ export async function challengeBoss(
   const regionName = getRegionName(targetRegion, locale);
   const materialSummary = summarizeMaterials(materials, locale);
   const itemSummary = summarizeItems(items, locale);
+  const battleSummary = buildBossBattleSummary({
+    player,
+    bossName,
+    bossPower: boss.power,
+    regionName,
+    unlockTargetName: unlockTargetRegion
+      ? getRegionName(unlockTargetRegion, locale)
+      : null,
+    locale,
+    didWin,
+    winChance,
+    gold,
+    exp,
+    materials,
+    items,
+  });
 
   const playerLogMessage = didWin
     ? locale === "zh"
@@ -258,6 +616,7 @@ export async function challengeBoss(
         rarity: item.rarity,
       })),
       challengeDay,
+      battleSummary,
     }),
     firstClearGlobalMessage:
       locale === "zh"
@@ -293,6 +652,7 @@ export async function challengeBoss(
       materials,
       items,
     },
+    battleSummary,
     unlockedRegionId: applyResult.unlockedRegionId,
     wasFirstClear: applyResult.wasFirstClear,
     clearCount: applyResult.clearCount,

@@ -47,6 +47,46 @@ export const materialDefinitions: MaterialDefinition[] = [
       en: "A warm crystal shard from the volcano ridge.",
     },
   },
+  {
+    id: "storm_plume",
+    name: { zh: "雷羽", en: "Storm Plume" },
+    description: {
+      zh: "在风暴沼泽里拾到的带电羽片，会微微发亮。",
+      en: "A charged feather shard recovered from the storm marsh.",
+    },
+  },
+  {
+    id: "moon_amber",
+    name: { zh: "月珀", en: "Moon Amber" },
+    description: {
+      zh: "月影神社的供台附近常能找到的温润树脂结晶。",
+      en: "A soft resin crystal often found near the moon shrine altars.",
+    },
+  },
+  {
+    id: "venom_sac",
+    name: { zh: "蚀毒囊", en: "Venom Sac" },
+    description: {
+      zh: "毒林怪物体内常见的腐蚀囊袋，仍保留刺激性气味。",
+      en: "A corrosive sac harvested from the creatures of the poison woods.",
+    },
+  },
+  {
+    id: "star_shard",
+    name: { zh: "星晶片", en: "Star Shard" },
+    description: {
+      zh: "裂谷深处剥落的冷光晶片，边缘像镜面一样锋利。",
+      en: "A cold luminous shard broken from the deeper crystal rift.",
+    },
+  },
+  {
+    id: "abyss_steel",
+    name: { zh: "渊钢", en: "Abyss Steel" },
+    description: {
+      zh: "渊火王城遗迹里残留的沉重金属，兼具灼热与阴冷。",
+      en: "A dense relic metal from the abyssfire bastion, both hot and cold to the touch.",
+    },
+  },
 ];
 
 export const materialMap = new Map(

@@ -7,14 +7,14 @@ import { materialDefinitions } from "@/data/materials";
 import { regionDefinitions } from "@/data/regions";
 
 describe("content targets", () => {
-  it("keeps V1 region, boss, and material counts at target", () => {
-    expect(regionDefinitions).toHaveLength(5);
-    expect(bossDefinitions).toHaveLength(5);
-    expect(materialDefinitions.length).toBeGreaterThanOrEqual(5);
+  it("keeps phase-two region, boss, and material counts at target", () => {
+    expect(regionDefinitions).toHaveLength(10);
+    expect(bossDefinitions).toHaveLength(10);
+    expect(materialDefinitions.length).toBeGreaterThanOrEqual(10);
   });
 
-  it("keeps V1 item base and affix counts at target", () => {
-    expect(itemBaseDefinitions.length).toBeGreaterThanOrEqual(30);
-    expect(affixDefinitions.length).toBeGreaterThanOrEqual(20);
+  it("keeps expanded item base and affix counts at target", () => {
+    expect(itemBaseDefinitions.length).toBeGreaterThanOrEqual(55);
+    expect(affixDefinitions.length).toBeGreaterThanOrEqual(30);
   });
 });

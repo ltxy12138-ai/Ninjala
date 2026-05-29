@@ -69,6 +69,10 @@ describe("boss challenges", () => {
     expect(result.didWin).toBe(true);
     expect(result.unlockedRegionId).toBe("region_002");
     expect(appliedInputs[0]?.unlockedRegionId).toBe("region_002");
+    expect(result.battleSummary.didWin).toBe(true);
+    expect(result.battleSummary.battleTurns.length).toBeGreaterThanOrEqual(5);
+    expect(result.battleSummary.battleTurns.length).toBeLessThanOrEqual(6);
+    expect(result.battleSummary.bossEndHp).toBe(0);
   });
 
   it("does not surface a new unlock on repeated clears", async () => {
@@ -257,5 +261,49 @@ describe("boss challenges", () => {
     ).rejects.toMatchObject({ code: "DAILY_LIMIT" });
 
     expect(applyCalls).toBe(1);
+  });
+
+  it("blocks progression boss attempts until the next-region power gate is met", async () => {
+    await expect(
+      challengeBoss(
+        {
+          async findPlayerById() {
+            return {
+              id: "player-1",
+              name: "Li",
+              power: 700,
+              currentRegionId: "region_005",
+              effectStats: {
+                luck: 0,
+                crit: 0,
+                goldBonus: 0,
+                expBonus: 0,
+                dropBonus: 0,
+              },
+            };
+          },
+          async getUnlockedRegionIds() {
+            return ["region_001", "region_002", "region_003", "region_004", "region_005"];
+          },
+          async getBossProgress() {
+            return null;
+          },
+          async applyBossChallenge() {
+            return {
+              status: "applied" as const,
+              remainingChallenges: 1,
+              clearCount: 1,
+              unlockedRegionId: "region_006",
+              wasFirstClear: true,
+            };
+          },
+        },
+        {
+          playerId: "player-1",
+          random: () => 0,
+          now: new Date("2026-05-29T09:00:00.000Z"),
+        },
+      ),
+    ).rejects.toMatchObject({ code: "POWER_GATE" });
   });
 });

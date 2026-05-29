@@ -114,7 +114,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 {locale === "zh" ? "当前重点" : "Current Focus"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[#183a2a]">
-                {locale === "zh" ? "封测硬化" : "Closed-Test Hardening"}
+                {locale === "zh" ? "主线扩展" : "Route Expansion"}
               </p>
             </div>
           </section>
@@ -125,8 +125,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#55715f]">
               {locale === "zh"
-                ? "账号密码登录、一次性邀请码注册、存档、挂机、掉落、分页背包、双饰品位、角色装备页、Boss、区域解锁，以及强化、分解、锻造、重铸、世界 Boss、好友祝福都已经接通；等级也改成了基于总经验的非线性公式成长，理论上限 3000 级。goldBonus、expBonus、dropBonus、crit 和 luck 现在都是真实生效属性，装备详情也会解释基础装备、词缀和来源区域。Phase 8 的模拟脚本和部署 runbook 已补上，同页操作和奖励弹窗关闭都会尽量保持滚动位置，而且不会持续抖动；测试环境也有了方便版管理台，但只对 PENGUIN-LI 账号开放。"
-                : "Account-password login, one-time invite registration, saves, idle rewards, drops, a paged inventory, dual accessory slots, character gear views, bosses, region unlocks, enhancement, dismantling, forging, reforging, world boss, and blessings are all connected; leveling now follows a nonlinear total-exp curve with a theoretical cap of 3000. goldBonus, expBonus, dropBonus, crit, and luck now affect real rewards or combat outcomes, and gear details explain base items, affixes, and source regions. Phase 8 simulation scripts plus the deployment runbook are in place, same-page actions plus reward-modal closes preserve scroll position without ongoing scroll jitter, and the test environment now has a convenient admin console limited to the PENGUIN-LI account."}
+                ? "账号密码登录、一次性邀请码注册、存档、挂机、掉落、分页背包、双饰品位、角色装备页、Boss、区域解锁，以及强化、分解、锻造、重铸、世界 Boss、好友祝福都已经接通；等级也改成了基于总经验的非线性公式成长，理论上限 3000 级。goldBonus、expBonus、dropBonus、crit 和 luck 现在都是真实生效属性，装备详情也会解释基础装备、词缀和来源区域。主线区域现在已经扩展到 10 区，后半段推进更强调练度门槛，主线 Boss 也改成了带状态栏和文字回放的轻战斗弹窗。"
+                : "Account-password login, one-time invite registration, saves, idle rewards, drops, a paged inventory, dual accessory slots, character gear views, bosses, region unlocks, enhancement, dismantling, forging, reforging, world boss, and blessings are all connected; leveling now follows a nonlinear total-exp curve with a theoretical cap of 3000. goldBonus, expBonus, dropBonus, crit, and luck now affect real rewards or combat outcomes, and gear details explain base items, affixes, and source regions. The main route now spans 10 regions, later progression leans harder on power gates, and main bosses now use a lightweight battle replay modal with status panels and staged combat text."}
             </p>
           </section>
 
@@ -228,8 +228,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#55715f]">
               {locale === "zh"
-                ? "封测硬化已经开始，当前模拟脚本和经济 sweep 已经接上，第一轮明显的推进过快和金币膨胀 warning 也已经压下来了。"
-                : "Closed-test hardening is underway, the simulation suite is connected, and the first obvious progression-speed and gold-inflation warnings have been pushed down."}
+                ? "主线已经进一步扩展到后 5 个区域，当前更适合继续观察后段养成节奏、Boss 门槛和新区域掉落是否足够有辨识度。"
+                : "The main route now extends through 5 more late-game regions, so the next focus is observing late-stage pacing, boss gates, and whether the new drop themes feel distinct enough."}
             </p>
           </section>
 
@@ -260,7 +260,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 {locale === "zh" ? "下一阶段" : "Next Phase"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[#183a2a]">
-                {locale === "zh" ? "封测硬化" : "Closed-Test Hardening"}
+                {locale === "zh" ? "主线扩展完成" : "Route Expansion Live"}
               </p>
             </div>
           </section>

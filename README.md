@@ -92,7 +92,8 @@ The playable V1 core loop is already in place:
 - gold, exp, material, and equipment rewards
 - formula-based leveling from total exp, using the nonlinear curve with a theoretical cap of level 3000
 - inventory, gear equip, dual accessory slots, one-click best equip, and power recalculation
-- bosses, region unlock progression, rankings, and logs
+- a 10-region main route with longer progression gates, bosses, rankings, and logs
+- main boss fights now use a lightweight battle-replay modal with status panels and staged combat text
 - enhancement, dismantling, material crafting, targeted forging, and affix reforging
 - goldBonus, expBonus, dropBonus, crit, and luck now all feed real reward or combat outcomes instead of being display-only
 - gear detail cards now explain base item, affixes, source region, and which stat lines come from base stats vs affixes

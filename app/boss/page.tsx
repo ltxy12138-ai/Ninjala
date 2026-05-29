@@ -5,23 +5,28 @@ import {
   challengeBossAction,
   claimWorldBossRewardAction,
 } from "@/app/actions/boss";
+import { BossBattleModal } from "@/components/game/BossBattleModal";
 import { ActionModal } from "@/components/game/ActionModal";
 import { PlayerSummary } from "@/components/game/PlayerSummary";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { getMaterialName } from "@/data/materials";
 import { getRegionName } from "@/data/regions";
 import { getWorldBossDescription, getWorldBossName } from "@/data/world-bosses";
-import { getBossById } from "@/lib/game/boss";
+import {
+  calculateBossWinChance,
+  deserializeBossBattleSummary,
+  formatChallengeDay,
+  getBossById,
+} from "@/lib/game/boss";
 import { getDb } from "@/lib/db";
-import { calculateBossWinChance, formatChallengeDay } from "@/lib/game/boss";
 import {
   getHighestUnlockedRegionId,
   normalizeUnlockedRegionIds,
 } from "@/lib/game/progression";
 import { getRegionById } from "@/lib/game/regions";
+import { formatWorldBossDay, getWorldBossForDay } from "@/lib/game/world-boss";
 import { formatUiNumber, getLocale } from "@/lib/i18n";
 import { requireCurrentPlayer } from "@/lib/player";
-import { formatWorldBossDay, getWorldBossForDay } from "@/lib/game/world-boss";
 
 type BossPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -64,6 +69,10 @@ function getBossErrorMessage(code: string | null, locale: "zh" | "en") {
       return locale === "zh"
         ? "今天的 Boss 挑战次数已经用完了。"
         : "You have used all boss attempts for today.";
+    case "POWER_GATE":
+      return locale === "zh"
+        ? "当前战力还没达到下一阶段的挑战标准。"
+        : "Your power has not reached the next-stage challenge gate yet.";
     case "REGION_NOT_UNLOCKED":
       return locale === "zh"
         ? "当前还没有可挑战的已解锁 Boss。"
@@ -116,6 +125,20 @@ function getWorldBossErrorMessage(code: string | null, locale: "zh" | "en") {
   }
 }
 
+function getChallengeStateLabel(
+  state: "locked" | "ready" | "cleared",
+  locale: "zh" | "en",
+) {
+  switch (state) {
+    case "locked":
+      return locale === "zh" ? "未达挑战标准" : "Gate Locked";
+    case "ready":
+      return locale === "zh" ? "已达挑战标准" : "Gate Ready";
+    default:
+      return locale === "zh" ? "已解锁当前终点" : "Route Cleared";
+  }
+}
+
 export default async function BossPage({ searchParams }: BossPageProps) {
   const [{ player, user }, locale, params] = await Promise.all([
     requireCurrentPlayer(),
@@ -165,6 +188,16 @@ export default async function BossPage({ searchParams }: BossPageProps) {
   );
   const highestUnlockedRegion = getRegionById(highestUnlockedRegionId);
   const boss = highestUnlockedRegion ? getBossById(highestUnlockedRegion.bossId) : null;
+  const nextUnlockRegion = highestUnlockedRegion?.unlocksRegionId
+    ? getRegionById(highestUnlockedRegion.unlocksRegionId)
+    : null;
+  const challengeGateMet =
+    !nextUnlockRegion || bossPlayer.power >= nextUnlockRegion.recommendedPower;
+  const challengeState: "locked" | "ready" | "cleared" = nextUnlockRegion
+    ? challengeGateMet
+      ? "ready"
+      : "locked"
+    : "cleared";
   const today = formatChallengeDay(new Date());
   const progress = boss
     ? bossPlayer.bossProgresses.find((entry) => entry.bossId === boss.id) ?? null
@@ -181,12 +214,7 @@ export default async function BossPage({ searchParams }: BossPageProps) {
 
   const result = readSearchParam(params, "result");
   const error = readSearchParam(params, "error");
-  const resultBossId = readSearchParam(params, "bossId");
-  const resultBoss = resultBossId ? getBossById(resultBossId) : null;
-  const modalBoss = resultBoss ?? boss;
-  const unlockedRegionId = readSearchParam(params, "unlocked");
-  const unlockedRegion = unlockedRegionId ? getRegionById(unlockedRegionId) : null;
-  const firstClear = readSearchParam(params, "firstClear") === "1";
+  const battleSummary = deserializeBossBattleSummary(readSearchParam(params, "battle"));
 
   const worldBossDay = formatWorldBossDay(new Date());
   const worldBoss = getWorldBossForDay(worldBossDay);
@@ -257,8 +285,8 @@ export default async function BossPage({ searchParams }: BossPageProps) {
       subtitle={
         selectedTab === "main"
           ? locale === "zh"
-            ? "只看当前主线 Boss，赢下后解锁下一个挂机区域。"
-            : "Focus on the current progression boss and unlock the next farming area."
+            ? "主线 Boss 现在会以轻演出弹窗展示过程，后续区域也需要更高练度才能继续推进。"
+            : "Main bosses now use a lightweight battle replay and later regions demand more power before you can push forward."
           : locale === "zh"
             ? "只看全服世界 Boss，减少无关信息滚屏。"
             : "Focus on the shared world boss without extra scrolling."
@@ -298,65 +326,20 @@ export default async function BossPage({ searchParams }: BossPageProps) {
         </div>
       </section>
 
-      {result === "win" && modalBoss ? (
-        <ActionModal
-          title={locale === "zh" ? "挑战成功" : "Victory"}
+      {(result === "win" || result === "lose") && battleSummary ? (
+        <BossBattleModal
+          key={`${battleSummary.bossName}-${result}-${battleSummary.playerEndHp}-${battleSummary.bossEndHp}`}
+          summary={battleSummary}
           closeHref={buildBossHref("main")}
           closeLabel={locale === "zh" ? "关闭" : "Close"}
-        >
-          <p>
-            {locale === "zh"
-              ? `你击败了 ${modalBoss.name.zh}，今日剩余挑战次数 ${remainingChallenges} 次。`
-              : `You defeated ${modalBoss.name.en}. ${remainingChallenges} attempts remain today.`}
-          </p>
-          <p>
-            {locale === "zh"
-              ? `奖励：${formatUiNumber(modalBoss.rewardGold, locale)} 金币、${formatUiNumber(modalBoss.rewardExp, locale)} 经验。`
-              : `Rewards: ${formatUiNumber(modalBoss.rewardGold, locale)} gold and ${formatUiNumber(modalBoss.rewardExp, locale)} exp.`}
-          </p>
-          <p>
-            {locale === "zh" ? "材料：" : "Materials: "}
-            {modalBoss.rewardMaterials
-              .map(
-                (material) =>
-                  `${getMaterialName(material.materialId, locale)} x${material.amount}`,
-              )
-              .join(locale === "zh" ? "、" : ", ")}
-          </p>
-          {firstClear ? (
-            <p>
-              {locale === "zh"
-                ? "这是你的首次通关，已经记入全服日志。"
-                : "This was your first clear and has been recorded in the global log."}
-            </p>
-          ) : null}
-          {unlockedRegion ? (
-            <p>
-              {locale === "zh"
-                ? `已解锁新区：${getRegionName(unlockedRegion, locale)}。`
-                : `Unlocked new area: ${getRegionName(unlockedRegion, locale)}.`}
-            </p>
-          ) : null}
-        </ActionModal>
+          locale={locale}
+        />
       ) : null}
 
-      {result === "lose" && modalBoss ? (
-        <section className="rounded-[24px] border border-[#f2e2c6] bg-[#fff7eb] p-5 shadow-[0_16px_40px_rgba(24,58,42,0.06)]">
-          <h2 className="text-lg font-semibold text-[#7c4c12]">
-            {locale === "zh" ? "挑战失败" : "Defeat"}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-[#8f5d28]">
-            {locale === "zh"
-              ? `这次没能击败 ${modalBoss.name.zh}。先提升装备和战力，再回来试一次。`
-              : `You lost to ${modalBoss.name.en}. Upgrade your gear and try again.`}
-          </p>
-        </section>
-      ) : null}
-
-      {result === "error" ? (
+      {selectedTab === "main" && result === "error" && error ? (
         <section className="rounded-[24px] border border-[#f2d5d0] bg-[#fff3f1] p-5 shadow-[0_16px_40px_rgba(24,58,42,0.06)]">
           <h2 className="text-lg font-semibold text-[#8c372b]">
-            {locale === "zh" ? "无法挑战" : "Challenge Blocked"}
+            {locale === "zh" ? "挑战被拦截" : "Challenge Blocked"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[#9b4b3f]">
             {getBossErrorMessage(error, locale)}
@@ -364,64 +347,52 @@ export default async function BossPage({ searchParams }: BossPageProps) {
         </section>
       ) : null}
 
-      {worldStatus === "success" && worldAction === "attack" ? (
-        <ActionModal
-          title={locale === "zh" ? "世界 Boss 出手完成" : "World Boss Attack Complete"}
-          closeHref={buildBossHref("world")}
-          closeLabel={locale === "zh" ? "关闭" : "Close"}
-        >
-          <p>
-            {locale === "zh"
-              ? `你对 ${getWorldBossName(worldBoss, locale)} 造成了 ${worldDamage} 点伤害。`
-              : `You dealt ${worldDamage} damage to ${getWorldBossName(worldBoss, locale)}.`}
-          </p>
-          <p>
-            {locale === "zh"
-              ? `当前剩余生命：${formatUiNumber(worldRemainingHp, locale)} / ${formatUiNumber(worldBoss.maxHp, locale)}。`
-              : `Remaining HP: ${formatUiNumber(worldRemainingHp, locale)} / ${formatUiNumber(worldBoss.maxHp, locale)}.`}
-          </p>
-          {worldFinal ? (
-            <p>
-              {locale === "zh"
-                ? "这一击完成了最后收尾，全服日志已经记录你的最终一击。"
-                : "This attack finished the boss and the global log recorded your final blow."}
-            </p>
-          ) : null}
-        </ActionModal>
-      ) : null}
-
-      {worldStatus === "success" && worldAction === "claim" ? (
-        <ActionModal
-          title={locale === "zh" ? "世界 Boss 奖励已领取" : "World Boss Reward Claimed"}
-          closeHref={buildBossHref("world")}
-          closeLabel={locale === "zh" ? "关闭" : "Close"}
-        >
-          <p>
-            {locale === "zh"
-              ? `获得 ${formatUiNumber(worldBoss.rewardGold, locale)} 金币、${formatUiNumber(worldBoss.rewardExp, locale)} 经验。`
-              : `Gained ${formatUiNumber(worldBoss.rewardGold, locale)} gold and ${formatUiNumber(worldBoss.rewardExp, locale)} exp.`}
-          </p>
-          <p>
-            {locale === "zh" ? "材料：" : "Materials: "}
-            {worldBoss.rewardMaterials
-              .map(
-                (material) =>
-                  `${getMaterialName(material.materialId, locale)} x${material.amount}`,
-              )
-              .join(locale === "zh" ? "、" : ", ")}
-          </p>
-        </ActionModal>
-      ) : null}
-
-      {worldStatus === "error" ? (
+      {selectedTab === "world" && worldStatus === "error" && worldError ? (
         <section className="rounded-[24px] border border-[#f2d5d0] bg-[#fff3f1] p-5 shadow-[0_16px_40px_rgba(24,58,42,0.06)]">
           <h2 className="text-lg font-semibold text-[#8c372b]">
-            {locale === "zh" ? "世界 Boss 操作被拦截" : "World Boss Action Blocked"}
+            {locale === "zh" ? "世界 Boss 被拦截" : "World Boss Blocked"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[#9b4b3f]">
             {getWorldBossErrorMessage(worldError, locale)}
           </p>
         </section>
+      ) : null}
+
+      {worldAction === "attack" && worldStatus === "success" ? (
+        <ActionModal
+          title={locale === "zh" ? "世界 Boss 出手完成" : "Attack Resolved"}
+          closeHref={buildBossHref("world")}
+          closeLabel={locale === "zh" ? "关闭" : "Close"}
+        >
+          <p>
+            {locale === "zh"
+              ? `本次造成 ${formatUiNumber(worldDamage, locale)} 点伤害，剩余生命 ${formatUiNumber(worldRemainingHp, locale)}。`
+              : `You dealt ${formatUiNumber(worldDamage, locale)} damage and left ${formatUiNumber(worldRemainingHp, locale)} HP.`}
+          </p>
+          <p>
+            {worldFinal
+              ? locale === "zh"
+                ? "你打出了最后一击，全服可以开始领取参与奖励。"
+                : "You landed the final blow. Participation rewards are now claimable."
+              : locale === "zh"
+                ? "世界 Boss 还没倒下，今天还有人可以继续补刀。"
+                : "The world boss is still standing and others can continue attacking today."}
+          </p>
+        </ActionModal>
+      ) : null}
+
+      {worldAction === "claim" && worldStatus === "success" ? (
+        <ActionModal
+          title={locale === "zh" ? "奖励已领取" : "Rewards Claimed"}
+          closeHref={buildBossHref("world")}
+          closeLabel={locale === "zh" ? "关闭" : "Close"}
+        >
+          <p>
+            {locale === "zh"
+              ? `你领取了 ${formatUiNumber(worldBoss.rewardGold, locale)} 金币、${formatUiNumber(worldBoss.rewardExp, locale)} 经验和世界 Boss 材料。`
+              : `You claimed ${formatUiNumber(worldBoss.rewardGold, locale)} gold, ${formatUiNumber(worldBoss.rewardExp, locale)} exp, and world boss materials.`}
+          </p>
+        </ActionModal>
       ) : null}
 
       {selectedTab === "main" ? (
@@ -431,18 +402,26 @@ export default async function BossPage({ searchParams }: BossPageProps) {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#72906f]">
-                    {locale === "zh" ? "当前主线 Boss" : "Current Boss"}
+                    {locale === "zh" ? "当前解锁 Boss" : "Current Route Boss"}
                   </p>
                   <h2 className="mt-2 text-xl font-semibold text-[#183a2a]">
-                    {locale === "zh" ? boss.name.zh : boss.name.en}
+                    {boss.name[locale]}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-[#55715f]">
-                    {locale === "zh" ? boss.description.zh : boss.description.en}
+                    {boss.description[locale]}
                   </p>
                 </div>
 
-                <div className="rounded-full bg-[#e7f2e5] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#315b43]">
-                  {getRegionName(highestUnlockedRegion, locale)}
+                <div
+                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                    challengeState === "locked"
+                      ? "bg-[#fff1ea] text-[#9a5d4d]"
+                      : challengeState === "ready"
+                        ? "bg-[#e7f2e5] text-[#315b43]"
+                        : "bg-[#eef3ee] text-[#4f6d59]"
+                  }`}
+                >
+                  {getChallengeStateLabel(challengeState, locale)}
                 </div>
               </div>
 
@@ -477,6 +456,38 @@ export default async function BossPage({ searchParams }: BossPageProps) {
                 </div>
               </div>
 
+              <div className="mt-4 rounded-2xl border border-[#e1ece0] bg-[#f8fbf7] px-4 py-3 text-sm leading-6 text-[#55715f]">
+                {nextUnlockRegion ? (
+                  <>
+                    <p>
+                      {locale === "zh"
+                        ? `解锁目标：${getRegionName(nextUnlockRegion, locale)}`
+                        : `Unlock target: ${getRegionName(nextUnlockRegion, locale)}`}
+                    </p>
+                    <p>
+                      {locale === "zh"
+                        ? `挑战门槛：战力 ${formatUiNumber(nextUnlockRegion.recommendedPower, locale)}`
+                        : `Challenge gate: ${formatUiNumber(nextUnlockRegion.recommendedPower, locale)} power`}
+                    </p>
+                    <p>
+                      {challengeGateMet
+                        ? locale === "zh"
+                          ? "你已经达到挑战标准，接下来只差真正击败守门 Boss。"
+                          : "You have met the challenge gate. Now you still need the actual clear."
+                        : locale === "zh"
+                          ? "当前练度还不够，先继续刷装和提升战力再来挑战。"
+                          : "Your build is not ready yet. Farm more power before attempting the gate."}
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    {locale === "zh"
+                      ? "这已经是当前版本主线最深处，没有新的区域需要解锁。"
+                      : "This is the deepest main-route area in the current build."}
+                  </p>
+                )}
+              </div>
+
               <p className="mt-4 text-sm leading-6 text-[#55715f]">
                 {locale === "zh"
                   ? `累计通关 ${progress?.clearCount ?? 0} 次。`
@@ -486,16 +497,20 @@ export default async function BossPage({ searchParams }: BossPageProps) {
               <form action={challengeBossAction} className="mt-4">
                 <button
                   type="submit"
-                  disabled={remainingChallenges <= 0}
+                  disabled={remainingChallenges <= 0 || !challengeGateMet}
                   className="min-h-11 w-full rounded-2xl bg-[#204b36] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#183a2a] disabled:cursor-not-allowed disabled:bg-[#89a898]"
                 >
-                  {remainingChallenges > 0
+                  {remainingChallenges <= 0
                     ? locale === "zh"
-                      ? "挑战 Boss"
-                      : "Challenge Boss"
-                    : locale === "zh"
                       ? "今日次数已用完"
-                      : "No attempts left today"}
+                      : "No attempts left today"
+                    : !challengeGateMet
+                      ? locale === "zh"
+                        ? "战力未达挑战标准"
+                        : "Power below challenge gate"
+                      : locale === "zh"
+                        ? "挑战 Boss"
+                        : "Challenge Boss"}
                 </button>
               </form>
             </section>
@@ -537,10 +552,10 @@ export default async function BossPage({ searchParams }: BossPageProps) {
                   : `Bonus gear drops: ${boss.rewardItemCount}.`}
               </p>
               <p className="mt-2 text-sm leading-6 text-[#55715f]">
-                {highestUnlockedRegion.unlocksRegionId
+                {nextUnlockRegion
                   ? locale === "zh"
-                    ? `首胜可解锁：${getRegionName(getRegionById(highestUnlockedRegion.unlocksRegionId)!, locale)}。`
-                    : `First clear unlocks: ${getRegionName(getRegionById(highestUnlockedRegion.unlocksRegionId)!, locale)}.`
+                    ? `首胜可解锁：${getRegionName(nextUnlockRegion, locale)}。`
+                    : `First clear unlocks: ${getRegionName(nextUnlockRegion, locale)}.`
                   : locale === "zh"
                     ? "这已经是当前版本的最终区域。"
                     : "This is the last region in the current build."}

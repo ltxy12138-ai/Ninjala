@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/lib/db";
-import { BossActionError, challengeBoss } from "@/lib/game/boss";
+import {
+  BossActionError,
+  challengeBoss,
+  serializeBossBattleSummary,
+} from "@/lib/game/boss";
 import { coerceRewardEffectStats } from "@/lib/game/effects";
 import { calculatePowerFromEquippedItems } from "@/lib/game/equipment";
 import { applyExpReward } from "@/lib/game/leveling";
@@ -695,6 +699,7 @@ export async function challengeBossAction() {
       tab: "main",
       result: result.didWin ? "win" : "lose",
       bossId: result.boss.id,
+      battle: serializeBossBattleSummary(result.battleSummary),
       chance: Math.round(result.winChance * 100),
       remaining: result.remainingChallenges,
       unlocked: result.unlockedRegionId,

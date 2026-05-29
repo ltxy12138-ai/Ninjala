@@ -208,6 +208,107 @@ export const affixDefinitions: AffixDefinition[] = [
       dropBonus: { min: 1, max: 3 },
     },
   },
+  {
+    id: "stormbound",
+    name: { zh: "奔雷", en: "Stormbound" },
+    placement: "prefix",
+    allowedSlots: ["weapon", "boots", "accessory"],
+    statRanges: {
+      attack: { min: 2, max: 4 },
+      crit: { min: 2, max: 4 },
+    },
+  },
+  {
+    id: "moonlit",
+    name: { zh: "月照", en: "Moonlit" },
+    placement: "prefix",
+    allowedSlots: ["helmet", "boots", "accessory"],
+    statRanges: {
+      expBonus: { min: 2, max: 4 },
+      luck: { min: 2, max: 4 },
+    },
+  },
+  {
+    id: "venomous",
+    name: { zh: "蚀毒", en: "Venomous" },
+    placement: "prefix",
+    allowedSlots: ["weapon", "armor", "accessory"],
+    statRanges: {
+      attack: { min: 2, max: 5 },
+      dropBonus: { min: 1, max: 3 },
+    },
+  },
+  {
+    id: "crystalline",
+    name: { zh: "晶护", en: "Crystalline" },
+    placement: "prefix",
+    allowedSlots: ["helmet", "armor", "accessory"],
+    statRanges: {
+      defense: { min: 2, max: 4 },
+      crit: { min: 1, max: 3 },
+    },
+  },
+  {
+    id: "abyssal",
+    name: { zh: "渊焰", en: "Abyssal" },
+    placement: "prefix",
+    allowedSlots: ["weapon", "armor", "accessory"],
+    statRanges: {
+      attack: { min: 3, max: 6 },
+      hp: { min: 6, max: 12 },
+    },
+  },
+  {
+    id: "of_storms",
+    name: { zh: "雷岚", en: "of Storms" },
+    placement: "suffix",
+    allowedSlots: ["weapon", "boots", "accessory"],
+    statRanges: {
+      crit: { min: 2, max: 4 },
+      goldBonus: { min: 1, max: 3 },
+    },
+  },
+  {
+    id: "of_mist",
+    name: { zh: "雾踪", en: "of Mist" },
+    placement: "suffix",
+    allowedSlots: ["helmet", "boots", "accessory"],
+    statRanges: {
+      luck: { min: 2, max: 4 },
+      dropBonus: { min: 1, max: 3 },
+    },
+  },
+  {
+    id: "of_rites",
+    name: { zh: "祭仪", en: "of Rites" },
+    placement: "suffix",
+    allowedSlots: ["helmet", "armor", "accessory"],
+    statRanges: {
+      expBonus: { min: 2, max: 4 },
+      hp: { min: 8, max: 16 },
+    },
+  },
+  {
+    id: "of_crystals",
+    name: { zh: "裂晶", en: "of Crystals" },
+    placement: "suffix",
+    allowedSlots: ["weapon", "armor", "accessory"],
+    statRanges: {
+      defense: { min: 2, max: 4 },
+      expBonus: { min: 1, max: 3 },
+    },
+  },
+  {
+    id: "of_ruin",
+    name: { zh: "残王", en: "of Ruin" },
+    placement: "suffix",
+    allowedSlots: ["weapon", "armor", "accessory"],
+    statRanges: {
+      attack: { min: 2, max: 5 },
+      crit: { min: 1, max: 3 },
+      goldBonus: { min: 1, max: 2 },
+    },
+  },
 ];
 
 export const affixMap = new Map(

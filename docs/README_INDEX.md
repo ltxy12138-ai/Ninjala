@@ -251,6 +251,9 @@
 - 第 8 阶段脚本和封测计划文档已经补齐，当前已能跑数值模拟并输出风险警告
 - 装备系统已经切到双饰品位，`goldBonus / expBonus / dropBonus / crit / luck` 也都接入了真实结算或战斗逻辑
 - 背包和角色页现在会显示装备机制说明卡，解释基础装备、词缀、来源区域和词条来源
+- 主线区域已经从 5 区扩展到 10 区，后 5 区带完整 Boss、材料和掉落主题
+- 主线 Boss 现在会用轻演出战斗弹窗展示状态变化和逐条战斗过程，不再只是一段结果文本
+- 区域推进现在更强调练度门槛，后续区域需要达到挑战标准后再击败守门 Boss 才能解锁
 - 公网部署方案与上线前检查清单已经补到 `docs/DEPLOYMENT_RUNBOOK.md` 和 `docs/LAUNCH_CHECKLIST.md`
 - `DEPLOYMENT_RUNBOOK.md` 里现在也包含了“轻量服务器自托管版”的中文最终命令版，适合用 Node + Nginx + Postgres 自己跑
 - `HERMES_ONE_SHOT_DEPLOY.md` 也已经补上，适合让 Hermes 在服务器本机直接一站式执行部署
